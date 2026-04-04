@@ -36,7 +36,19 @@ uvicorn app.main:app --reload --port 8000 --reload-dir app
 
 `--reload-dir app` limits the file watcher to the `app/` package so changes under `.venv` (e.g. imports touching `site-packages`) do not restart the server in a loop.
 
-Keep this terminal open. The API listens at **`http://localhost:8000`**.
+**Pre-download all image-model weights (optional, recommended before first `curl`)**
+
+After `pip install -r requirements.txt`, run:
+
+```bash
+cd services/ml
+source .venv/bin/activate
+python scripts/prefetch_models.py
+```
+
+This downloads then loads the same three Hugging Face models as the image pipeline ([`image_detector.py`](../services/ml/app/detectors/image_detector.py)). You should see **download progress** for each repo; after that, **loading the pipeline on CPU** can take several minutes **with little output** — that is normal, not a hang. Total disk is often **~1–2 GB** under `~/.cache/huggingface/`. Then the first `POST /detect/image/` does not wait on large downloads.
+
+Start the API with the `uvicorn` command in the block above and keep that terminal open. The API listens at **`http://localhost:8000`**.
 
 ### 1.4 Smoke tests
 
@@ -74,6 +86,10 @@ curl -sS -X POST http://localhost:8000/detect/image/ \
 ```
 
 Use any real image path on your machine instead of a placeholder like `/path/to/your/image.png` — `curl` error **26** means the file path could not be read.
+
+**First `POST /detect/image/` request (why Python “goes busy” and `curl` seems stuck)**
+
+The pipeline pulls **SigLIP and fallback** model weights from Hugging Face on first use. The uvicorn terminal will show downloads (`config.json`, `model.safetensors`, progress bars, often **hundreds of MB**). **`curl` does not print anything until the full request finishes**, so it may sit with no output for **several minutes** the first time. That is normal. After weights are cached under `~/.cache/huggingface/`, later requests start much faster. You may also see `NotOpenSSLWarning` from `urllib3` on macOS (LibreSSL vs OpenSSL); it is usually harmless for these downloads.
 
 **Video / audio / document**
 
