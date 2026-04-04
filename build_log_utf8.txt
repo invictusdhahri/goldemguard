@@ -1,0 +1,107 @@
+﻿
+> @veritas/frontend@0.1.0 build C:\Users\Alpha\Documents\GitHub\clawy\apps\frontend
+> next build
+
+Γû▓ Next.js 16.2.2 (Turbopack)
+
+  Creating an optimized production build ...
+pnpm : 
+At line:1 char:1
++ pnpm --filter frontend build > 
+build_log.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo          : NotSpecifi 
+   ed: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComm 
+   andError
+ 
+> Build error occurred
+Error: Turbopack build failed with 1 
+errors:
+./apps/frontend/app/result/[id]/page.tsx:
+3:26
+`ssr: false` is not allowed with 
+`next/dynamic` in Server Components. 
+Please move it into a Client Component.
+  [90m 1 |[0m [36mimport[0m dynamic 
+[36mfrom[0m [32m'next/dynamic'[0m;
+  [90m 2 |[0m
+[31m[1m>[0m [90m 3 |[0m 
+[36mconst[0m [33mResultPageClient[0m 
+= dynamic(
+  [90m   |[0m                          
+[31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 4 |[0m   () => [36
+mimport[0m([32m'@/components/result/Res
+ultPageClient'[0m).then((m) => 
+m.[33mResultPageClient[0m),
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 5 |[0m   {
+  [90m   |[0m [31m[1m^^^[0m
+[31m[1m>[0m [90m 6 |[0m     ssr: 
+[36mfalse[0m,
+  [90m   |[0m 
+[31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m     
+loading: () => (
+  [90m   |[0m 
+[31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m       <main 
+className=[32m"bg-grid-sm 
+min-h-screen"[0m>
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m         
+<div className=[32m"mx-auto max-w-2xl 
+px-4 py-20"[0m>
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0
+m
+[31m[1m>[0m [90m10 |[0m           
+<div className=[32m"mb-6 h-8 w-48 
+animate-pulse rounded-lg 
+bg-obsidian-300/60"[0m />
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m           
+<div className=[32m"glass-card h-64 
+animate-pulse rounded-2xl 
+bg-obsidian-200/40"[0m />
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m         
+</div>
+  [90m   |[0m 
+[31m[1m^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m       
+</main>
+  [90m   |[0m 
+[31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m     ),
+  [90m   |[0m [31m[1m^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   },
+  [90m   |[0m [31m[1m^^^^[0m
+[31m[1m>[0m [90m16 |[0m );
+  [90m   |[0m [31m[1m^[0m
+  [90m17 |[0m
+  [90m18 |[0m [36mexport[0m 
+[36mdefault[0m [36masync[0m 
+[36mfunction[0m [33mResultPage[0m({ 
+params }: { params: [33mPromise[0m<{ 
+id: string }> }) {
+  [90m19 |[0m   [36mconst[0m { id } 
+= [36mawait[0m params;
+
+Ecmascript file had an error
+
+
+    at <unknown> (./apps/frontend/app/res
+ult/[id]/page.tsx:3:26)
+C:\Users\Alpha\Documents\GitHub\clawy\apps\frontend:
+ΓÇëERR_PNPM_RECURSIVE_RUN_FIRST_FAILΓÇë @veritas/frontend@0.1.0 build: `next build`
+Exit status 1

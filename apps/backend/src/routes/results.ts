@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { supabase } from '../services/supabase';
+import { validateJobId } from '../middleware/validation';
 
 export const resultsRouter = Router();
 
-resultsRouter.get('/status/:id', requireAuth, async (req: AuthRequest, res) => {
+resultsRouter.get('/status/:id', requireAuth, validateJobId, async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const { data, error } = await supabase
@@ -22,7 +23,7 @@ resultsRouter.get('/status/:id', requireAuth, async (req: AuthRequest, res) => {
   res.json(data);
 });
 
-resultsRouter.get('/result/:id', requireAuth, async (req: AuthRequest, res) => {
+resultsRouter.get('/result/:id', requireAuth, validateJobId, async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const { data: job, error: jobError } = await supabase

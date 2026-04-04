@@ -182,7 +182,7 @@ export default function FallbackChain() {
                       >
                         {step.label}
                       </div>
-                      <div className="text-xs" style={{ color: "#334155" }}>
+                      <div className="text-xs" style={{ color: "#64748b" }}>
                         {step.sublabel}
                       </div>
                     </div>
@@ -244,7 +244,7 @@ export default function FallbackChain() {
                     <div className="text-sm font-semibold" style={{ color: isActive ? "#e2e8f0" : "#64748b", fontFamily: "var(--font-display)" }}>
                       {step.label}
                     </div>
-                    <div className="text-xs mt-0.5" style={{ color: "#334155" }}>{step.sublabel}</div>
+                    <div className="text-xs mt-0.5" style={{ color: "#64748b" }}>{step.sublabel}</div>
                   </div>
                 </div>
               );

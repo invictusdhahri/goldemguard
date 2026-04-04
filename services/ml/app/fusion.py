@@ -45,3 +45,14 @@ def fuse_audio_scores(results: list[dict]) -> float:
             total += r["score"] * w
             w_sum += w
     return round(total / w_sum, 3) if w_sum > 0 else 0.5
+
+
+def fuse_document_scores(results: list[dict]) -> float:
+    weights = {"gptzero": 0.60, "perplexity": 0.30, "forensics": 0.10}
+    total, w_sum = 0.0, 0.0
+    for r in results:
+        if r.get("score") is not None:
+            w = weights.get(r["model"], 0.0)
+            total += r["score"] * w
+            w_sum += w
+    return round(total / w_sum, 3) if w_sum > 0 else 0.5

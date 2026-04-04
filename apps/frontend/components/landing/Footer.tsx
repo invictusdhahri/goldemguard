@@ -34,22 +34,27 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6">
-            {["Documentation", "API Reference", "Privacy Policy", "GitHub"].map((link) => (
+            {[
+              { label: "Documentation", href: "/docs" },
+              { label: "API Reference", href: "#" },
+              { label: "Privacy Policy", href: "#" },
+              { label: "GitHub", href: "#" },
+            ].map((link) => (
               <a
-                key={link}
-                href="#"
+                key={link.label}
+                href={link.href}
                 className="text-xs transition-colors duration-200"
-                style={{ color: "#334155" }}
-                onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
-                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#334155")}
+                style={{ color: "#64748b" }}
+                onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#94a3b8")}
+                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
               >
-                {link}
+                {link.label}
               </a>
             ))}
           </div>
 
           {/* Copyright */}
-          <p className="text-xs" style={{ color: "#1e293b" }}>
+          <p className="text-xs" style={{ color: "#475569" }}>
             © 2024 VeritasAI. Built for truth.
           </p>
         </div>

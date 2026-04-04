@@ -51,9 +51,9 @@ export default function CTA() {
               Get Started Free
               <ArrowRight size={18} />
             </Link>
-            <a href="#" className="btn-ghost text-base" style={{ padding: "13px 32px", fontSize: "16px" }}>
+            <Link href="/docs" className="btn-ghost text-base" style={{ padding: "13px 32px", fontSize: "16px" }}>
               View Documentation
-            </a>
+            </Link>
           </div>
 
           {/* Trust row */}
