@@ -6,6 +6,7 @@ This folder holds project documentation beyond the root [README.md](../README.md
 
 | Document | Description |
 |----------|-------------|
+| [TESTING.md](TESTING.md) | Local ML service (`uvicorn`, `curl`, `/health`, image upload), optional full-stack flow, troubleshooting |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Deploying frontend (Vercel), backend (Railway), ML service (HuggingFace Spaces), Supabase setup, env vars, troubleshooting |
 
 ---
@@ -79,7 +80,7 @@ Use this as a checklist of what is implemented in the repo today. Pending items 
 ## Suggested next steps
 
 1. Fill backend `.env` and ensure Redis + Supabase are reachable so `pnpm dev` starts the API.
-2. Run ML service: `cd services/ml && uvicorn app.main:app --reload --port 8000` (after `pip install -r requirements.txt`).
+2. Run ML service: `cd services/ml && uvicorn app.main:app --reload --port 8000 --reload-dir app` (after `pip install -r requirements.txt`).
 3. Implement remaining ML modalities (video, audio, document) and wire frontend flows.
 
 For environment variables, see the root [`.env.example`](../.env.example) and [DEPLOYMENT.md](DEPLOYMENT.md) § Environment Variables Reference.

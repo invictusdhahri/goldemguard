@@ -118,7 +118,7 @@ cd services/ml
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000 --reload-dir app
 ```
 
 ---
@@ -170,6 +170,8 @@ clawy/
 | `pnpm lint` | Lint all packages |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm format:check` | Check formatting without writing |
+
+More guides: [docs/TESTING.md](docs/TESTING.md) (local ML and full-stack checks), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

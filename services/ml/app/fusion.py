@@ -1,5 +1,7 @@
 """Score fusion — weighted combination of model outputs per modality."""
 
+from typing import Optional
+
 
 def fuse_image_scores(results: list[dict]) -> float:
     weights = {"siglip": 0.40, "universalfake": 0.35, "vit": 0.15, "exif": 0.10}
@@ -13,10 +15,10 @@ def fuse_image_scores(results: list[dict]) -> float:
 
 
 def fuse_video_scores(
-    spatial: float | None,
-    behavioral: float | None,
-    sync: float | None,
-    audio: float | None,
+    spatial: Optional[float],
+    behavioral: Optional[float],
+    sync: Optional[float],
+    audio: Optional[float],
     has_audio: bool,
 ) -> float:
     if has_audio:
