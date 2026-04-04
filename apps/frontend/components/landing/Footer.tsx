@@ -34,16 +34,21 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6">
-            {["Documentation", "API Reference", "Privacy Policy", "GitHub"].map((link) => (
+            {[
+              { label: "Documentation", href: "/docs" },
+              { label: "API Reference", href: "#" },
+              { label: "Privacy Policy", href: "#" },
+              { label: "GitHub", href: "#" },
+            ].map((link) => (
               <a
-                key={link}
-                href="#"
+                key={link.label}
+                href={link.href}
                 className="text-xs transition-colors duration-200"
                 style={{ color: "#64748b" }}
                 onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
                 onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
               >
-                {link}
+                {link.label}
               </a>
             ))}
           </div>
