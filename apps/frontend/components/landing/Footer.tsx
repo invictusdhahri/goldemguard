@@ -39,9 +39,9 @@ export default function Footer() {
                 key={link}
                 href="#"
                 className="text-xs transition-colors duration-200"
-                style={{ color: "#334155" }}
+                style={{ color: "#64748b" }}
                 onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
-                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#334155")}
+                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
               >
                 {link}
               </a>
@@ -49,7 +49,7 @@ export default function Footer() {
           </div>
 
           {/* Copyright */}
-          <p className="text-xs" style={{ color: "#1e293b" }}>
+          <p className="text-xs" style={{ color: "#475569" }}>
             © 2024 VeritasAI. Built for truth.
           </p>
         </div>
