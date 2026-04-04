@@ -8,5 +8,6 @@ export type {
   ModelScore,
   AnalysisResult,
   FinalResponse,
+  ModelEvidence,
   ClaudeVerdictResponse,
 } from './types';

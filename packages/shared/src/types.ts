@@ -2,7 +2,8 @@ export type MediaType = 'image' | 'video' | 'audio' | 'document';
 
 export type JobStatus = 'pending' | 'processing' | 'done' | 'failed';
 
-export type Verdict = 'REAL' | 'FAKE' | 'UNCERTAIN';
+/** Backend (SightEngine) verdict values */
+export type Verdict = 'AI_GENERATED' | 'HUMAN' | 'UNCERTAIN';
 
 export type Plan = 'free' | 'pro' | 'enterprise';
 
@@ -13,10 +14,11 @@ export interface User {
   plan: Plan;
 }
 
+/** Full row from DB; `/api/status/:id` may omit some fields */
 export interface AnalysisJob {
   id: string;
-  user_id: string;
-  file_url: string;
+  user_id?: string;
+  file_url?: string;
   media_type: MediaType;
   status: JobStatus;
   created_at: string;
@@ -43,6 +45,31 @@ export interface AnalysisResult {
   processing_ms: number;
 }
 
+/** Per-model outputs shown on the result page (proof + skip reasons). */
+export interface ModelEvidence {
+  sightengine: {
+    ai_likeness: number;
+    verdict: Verdict;
+    proof: string;
+  };
+  grok:
+    | {
+        ran: true;
+        assessment: 'LIKELY_AI' | 'LIKELY_REAL' | 'UNCERTAIN';
+        confidence_pct: number;
+        proof: string;
+      }
+    | { ran: false; skip_reason: string };
+  claude:
+    | {
+        ran: true;
+        /** 0–100: Claude’s own visual AI-likeness estimate */
+        confidence_pct: number;
+        proof_points: string[];
+      }
+    | { ran: false; skip_reason: string };
+}
+
 export interface FinalResponse {
   job_id: string;
   verdict: Verdict;
@@ -54,6 +81,8 @@ export interface FinalResponse {
   models_run: string[];
   models_skipped: string[];
   processing_ms: number;
+  /** Present for new analyses; older rows may omit until backfilled. */
+  model_evidence?: ModelEvidence;
 }
 
 export interface ClaudeVerdictResponse {
