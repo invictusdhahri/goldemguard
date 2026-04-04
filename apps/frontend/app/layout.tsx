@@ -11,13 +11,20 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'VeritasAI — Detect. Explain. Trust.',
-  description: 'Multimodal AI-generated content detection platform. Detect AI-generated images, video, audio, and documents with 94.4% accuracy.',
+  description:
+    'Multimodal AI-generated content detection platform. Detect AI-generated images, video, audio, and documents with 94.4% accuracy.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`scroll-smooth ${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className={`${inter.className} antialiased`}>{children}</body>
+    <html
+      lang="en"
+      className={`scroll-smooth ${inter.variable} ${spaceGrotesk.variable}`}
+      suppressHydrationWarning
+    >
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
