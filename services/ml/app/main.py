@@ -1,11 +1,19 @@
+"""
+DEPRECATED — This self-hosted ML service has been shut down.
+Image analysis now uses the SightEngine API directly from the backend.
+See: apps/backend/src/services/sightengineService.ts
+
+This code is kept for reference and may be removed in a future cleanup.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import image, video, audio, document
 
 app = FastAPI(
-    title="VeritasAI ML Service",
-    description="Multimodal AI-generated content detection",
+    title="VeritasAI ML Service [DEPRECATED]",
+    description="DEPRECATED — Use SightEngine API instead. See apps/backend/src/services/sightengineService.ts",
     version="2.0.0",
 )
 

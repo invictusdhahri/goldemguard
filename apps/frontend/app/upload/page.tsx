@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, Image, Video, Music, FileText, AlertCircle, Zap, Shield, CheckCircle, Loader2 } from 'lucide-react'
 import InteractiveBackground from '../../components/InteractiveBackground'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -12,6 +14,28 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login')
+      return
+    }
+    // Keep localStorage token in sync with the active Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        localStorage.setItem('token', session.access_token)
+      }
+    })
+  }, [user, authLoading, router])
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-grid flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    )
+  }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePosition({ x: e.clientX, y: e.clientY })
