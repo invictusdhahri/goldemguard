@@ -5,8 +5,16 @@ import { supabase } from '../services/supabase';
 export const historyRouter = Router();
 
 historyRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
-  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-  const offset = parseInt(req.query.offset as string) || 0;
+  // Validate and sanitize query parameters
+  const limitParam = parseInt(req.query.limit as string);
+  const offsetParam = parseInt(req.query.offset as string);
+  
+  // Ensure valid numbers and apply constraints
+  const limit = Math.min(
+    isNaN(limitParam) ? 20 : Math.max(1, limitParam),
+    100
+  );
+  const offset = isNaN(offsetParam) ? 0 : Math.max(0, offsetParam);
 
   const { data: jobs, error } = await supabase
     .from('analysis_jobs')
