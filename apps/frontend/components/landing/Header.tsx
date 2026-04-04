@@ -69,13 +69,13 @@ export default function Header() {
 
         {/* CTAs */}
         <div className="hidden md:flex items-center gap-3">
-          <a
-            href="#"
+          <Link
+            href="/docs"
             className="btn-ghost text-sm"
             style={{ padding: "8px 18px", fontSize: "14px" }}
           >
             Documentation
-          </a>
+          </Link>
           <Link
             href="/dashboard"
             className="btn-primary text-sm"
@@ -119,9 +119,9 @@ export default function Header() {
             </a>
           ))}
           <div className="flex flex-col gap-3 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-            <a href="#" className="btn-ghost text-center text-sm" style={{ padding: "10px", fontSize: "14px" }}>
+            <Link href="/docs" className="btn-ghost text-center text-sm" style={{ padding: "10px", fontSize: "14px" }} onClick={() => setMenuOpen(false)}>
               Documentation
-            </a>
+            </Link>
             <Link href="/dashboard" className="btn-primary justify-center text-sm" style={{ padding: "10px", fontSize: "14px" }}>
               Launch App <ChevronRight size={14} />
             </Link>

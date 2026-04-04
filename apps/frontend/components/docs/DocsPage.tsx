@@ -244,28 +244,11 @@ export function DocsPage() {
 
             <DocsSection id="team" title="👥 Team">
               <ul className="space-y-2 text-slate-300">
-                <li>
-                  <a
-                    href="https://github.com/invictusdhahri"
-                    className="text-cyan hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    @invictusdhahri
-                  </a>{' '}
-                  - ML Pipeline &amp; Backend
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/yassin-tn"
-                    className="text-cyan hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    @yassin-tn
-                  </a>{' '}
-                  - Backend &amp; Frontend
-                </li>
+                <li>Amen Allah Dhahri</li>
+                <li>Mohamed Yaassine Ncib</li>
+                <li>Rayen Oueslati</li>
+                <li>Alaa Elmir</li>
+                <li>Imen Nasr</li>
               </ul>
               <p className="mt-6 text-slate-400">Made with ❤️ for truth and transparency</p>
             </DocsSection>
