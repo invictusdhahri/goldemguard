@@ -23,9 +23,13 @@ async def run_with_fallback(
             results.append({"model": detector.name, "score": score, "status": "ok"})
             if score >= threshold:
                 break
-        except (ImportError, RuntimeError, asyncio.TimeoutError) as e:
+        except (ImportError, RuntimeError, NotImplementedError, asyncio.TimeoutError) as e:
             logger.warning("Fallback triggered for %s: %s", detector.name, e)
             results.append({"model": detector.name, "score": None, "status": str(e)})
+            continue
+        except Exception as e:
+            logger.error("Unexpected error in %s: %s", detector.name, e)
+            results.append({"model": detector.name, "score": None, "status": f"error: {e}"})
             continue
 
     return results

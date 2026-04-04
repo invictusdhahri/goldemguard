@@ -1,13 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret';
+import { supabase } from '../services/supabase';
 
 export interface AuthRequest extends Request {
   userId?: string;
 }
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {
@@ -15,11 +13,13 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     return;
   }
 
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
-    req.userId = payload.sub;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return;
   }
+
+  req.userId = data.user.id;
+  next();
 }
