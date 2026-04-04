@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
-import { supabase } from '../services/supabase';
+import { createSupabaseWithAccessToken } from '../services/supabase';
 import { validateJobId } from '../middleware/validation';
 
 export const resultsRouter = Router();
@@ -8,7 +8,9 @@ export const resultsRouter = Router();
 resultsRouter.get('/status/:id', requireAuth, validateJobId, async (req: AuthRequest, res) => {
   const { id } = req.params;
 
-  const { data, error } = await supabase
+  const db = createSupabaseWithAccessToken(req.accessToken!);
+
+  const { data, error } = await db
     .from('analysis_jobs')
     .select('id, status, media_type, created_at, completed_at')
     .eq('id', id)
@@ -26,7 +28,9 @@ resultsRouter.get('/status/:id', requireAuth, validateJobId, async (req: AuthReq
 resultsRouter.get('/result/:id', requireAuth, validateJobId, async (req: AuthRequest, res) => {
   const { id } = req.params;
 
-  const { data: job, error: jobError } = await supabase
+  const db = createSupabaseWithAccessToken(req.accessToken!);
+
+  const { data: job, error: jobError } = await db
     .from('analysis_jobs')
     .select('id, user_id, status')
     .eq('id', id)
@@ -43,7 +47,7 @@ resultsRouter.get('/result/:id', requireAuth, validateJobId, async (req: AuthReq
     return;
   }
 
-  const { data: result, error: resultError } = await supabase
+  const { data: result, error: resultError } = await db
     .from('results')
     .select('*')
     .eq('job_id', id)
@@ -65,5 +69,6 @@ resultsRouter.get('/result/:id', requireAuth, validateJobId, async (req: AuthReq
     models_run: result.models_run,
     models_skipped: result.models_skipped,
     processing_ms: result.processing_ms,
+    model_evidence: result.model_evidence ?? {},
   });
 });

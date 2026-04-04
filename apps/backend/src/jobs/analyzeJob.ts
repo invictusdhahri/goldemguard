@@ -1,3 +1,5 @@
+import '../loadEnv';
+
 /**
  * analyzeJob.ts — Production BullMQ worker for VeritasAI analysis pipeline
  *
@@ -5,10 +7,12 @@
  *   1. Mark job "processing" in DB
  *   2. Download file from Supabase storage (uploads bucket)
  *   3. Guard against oversized files (>100 MB)
- *   4. Send file to ML service via multipart/form-data with timeout + retry
- *   5. Normalise partial ML response (missing fields are defaulted, not fatal)
- *   6. Idempotent upsert into `results` table
- *   7. Mark job "done" or "failed" with completed_at timestamp
+ *   4a. SightEngine + Grok in parallel (Grok assesses independently — no SE anchoring)
+ *   4b. Claude Haiku (vision): independent AI-likeness rate + reasoning synthesis (optional)
+ *   4c. Final verdict: SE raw score ≥ 0.5 → always AI_GENERATED; else SE threshold AI_GENERATED → AI;
+ *       else Grok preferred, then Claude, then SE
+ *   5. Idempotent upsert into `results` table
+ *   6. Mark job "done" or "failed" with completed_at timestamp
  *
  * Error taxonomy:
  *   UnrecoverableError  → BullMQ drops the job immediately (no retry)
@@ -19,14 +23,16 @@
 
 import { Worker, type Job, UnrecoverableError } from 'bullmq';
 import IORedis from 'ioredis';
-import { getSupabase } from '../services/supabase';
+import { getSupabaseServiceRole, storageObjectPathFromFileUrl } from '../services/supabase';
+import { analyzeImage, unsupportedMediaResult, type SightEngineResult } from '../services/sightengineService';
+import { callGrok, isValidGrokResult, type GrokResult } from '../services/grokService';
+import { callClaude } from '../services/claudeService';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ML_SERVICE_URL    = process.env.ML_SERVICE_URL ?? 'http://localhost:8000';
 const MAX_FILE_BYTES    = 100 * 1024 * 1024; // 100 MB
-const ML_TIMEOUT_MS     = 30_000;            // abort single ML request after 30s
-const ML_MAX_ATTEMPTS   = 3;                 // internal retry counter (separate from BullMQ retries)
+const API_TIMEOUT_MS    = 30_000;            // abort single SightEngine request after 30s
+const API_MAX_ATTEMPTS  = 3;                 // internal retry counter (separate from BullMQ retries)
 
 // ─── Type definitions ─────────────────────────────────────────────────────────
 
@@ -38,29 +44,8 @@ interface AnalysisJobPayload {
   userId:    string;
 }
 
-/** Canonical ML service response — all fields optional to handle partial responses */
-interface MlResponseRaw {
-  verdict?:        'AI_GENERATED' | 'HUMAN' | 'UNCERTAIN';
-  confidence?:     number;
-  explanation?:    string;
-  model_scores?:   Record<string, number>;
-  models_run?:     string[];
-  models_skipped?: string[];
-  top_signals?:    string[];
-  caveat?:         string | null;
-}
-
-/** Normalised — all fields guaranteed after sanitisation */
-interface MlResult {
-  verdict:        'AI_GENERATED' | 'HUMAN' | 'UNCERTAIN';
-  confidence:     number;
-  explanation:    string;
-  model_scores:   Record<string, number>;
-  models_run:     string[];
-  models_skipped: string[];
-  top_signals:    string[];
-  caveat:         string | null;
-}
+/** Re-export for internal use — matches the shape persisted to the DB */
+type MlResult = SightEngineResult;
 
 // ─── Structured logger ────────────────────────────────────────────────────────
 
@@ -122,93 +107,56 @@ function createWorkerRedis(): IORedis {
   return conn;
 }
 
-// ─── ML service call with timeout + internal retry ────────────────────────────
+// ─── SightEngine API call with timeout + internal retry ───────────────────────
 //
-// Why internal retry instead of relying purely on BullMQ retries?
-// BullMQ retries re-queue the job (seconds of latency + DB round-trip).
-// Internal retry is faster for transient 5xx flickers while still honouring
-// the 30s timeout per attempt.
+// Internal retry is faster for transient HTTP errors while still honouring
+// the per-attempt timeout. BullMQ-level retries re-queue the whole job.
 
-async function callMlService(
+async function callSightEngine(
   mediaType: string,
   buffer:    Buffer,
   filename:  string,
   jobId:     string,
 ): Promise<MlResult> {
+  if (mediaType !== 'image') {
+    log('warn', jobId, `Unsupported media type "${mediaType}" — returning stub result`);
+    return unsupportedMediaResult(mediaType);
+  }
+
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < ML_MAX_ATTEMPTS; attempt++) {
-    // Exponential backoff between internal retries (not the first attempt)
+  for (let attempt = 0; attempt < API_MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) {
       const delayMs = Math.min(Math.pow(2, attempt) * 1_000, 30_000);
-      log('warn', jobId, `ML retry ${attempt + 1}/${ML_MAX_ATTEMPTS} in ${delayMs}ms`);
+      log('warn', jobId, `SightEngine retry ${attempt + 1}/${API_MAX_ATTEMPTS} in ${delayMs}ms`);
       await sleep(delayMs);
     }
 
     const controller = new AbortController();
-    const timer      = setTimeout(() => controller.abort(), ML_TIMEOUT_MS);
+    const timer      = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
     try {
-      const form = new FormData();
-      form.append('file', new Blob([new Uint8Array(buffer)]), filename);
-
-      const res = await fetch(`${ML_SERVICE_URL}/detect/${mediaType}`, {
-        method: 'POST',
-        body:   form,
-        signal: controller.signal,
-      });
-
+      const result = await analyzeImage(buffer, filename, controller.signal);
       clearTimeout(timer);
-
-      // 4xx — client/input error; retrying won't help
-      if (res.status >= 400 && res.status < 500) {
-        const body = await res.text().catch(() => '');
-        throw new UnrecoverableError(`ML rejected input (HTTP ${res.status}): ${body}`);
-      }
-
-      // 5xx — server-side failure; eligible for retry
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        lastError  = new Error(`ML service HTTP ${res.status}: ${body}`);
-        continue;
-      }
-
-      const raw = (await res.json()) as MlResponseRaw;
-      return normaliseMlResponse(raw);
-
+      return result;
     } catch (err) {
       clearTimeout(timer);
 
-      // Propagate immediately — no point retrying unrecoverable errors
-      if (err instanceof UnrecoverableError) throw err;
+      if ((err as Error).message?.includes('Missing SIGHTENGINE')) {
+        throw new UnrecoverableError((err as Error).message);
+      }
 
       if ((err as Error).name === 'AbortError') {
-        lastError = new Error(`ML timed out after ${ML_TIMEOUT_MS}ms (attempt ${attempt + 1})`);
+        lastError = new Error(`SightEngine timed out after ${API_TIMEOUT_MS}ms (attempt ${attempt + 1})`);
         log('warn', jobId, lastError.message);
         continue;
       }
 
-      // Network-level error (DNS, ECONNREFUSED) — retry
       lastError = err as Error;
     }
   }
 
-  // All attempts exhausted — let BullMQ decide whether to re-queue
-  throw lastError ?? new Error('ML service failed after all internal retries');
-}
-
-/** Fill in defaults for any missing ML response fields — partial results are still useful */
-function normaliseMlResponse(raw: MlResponseRaw): MlResult {
-  return {
-    verdict:        raw.verdict        ?? 'UNCERTAIN',
-    confidence:     raw.confidence     ?? 0,
-    explanation:    raw.explanation    ?? 'No explanation provided.',
-    model_scores:   raw.model_scores   ?? {},
-    models_run:     raw.models_run     ?? [],
-    models_skipped: raw.models_skipped ?? [],
-    top_signals:    raw.top_signals    ?? [],
-    caveat:         raw.caveat         ?? null,
-  };
+  throw lastError ?? new Error('SightEngine API failed after all internal retries');
 }
 
 // ─── Database helpers ─────────────────────────────────────────────────────────
@@ -222,7 +170,7 @@ async function setJobStatus(
   status:  'processing' | 'done' | 'failed',
   isRetry = false,
 ): Promise<void> {
-  const db = getSupabase();
+  const db = getSupabaseServiceRole();
 
   const patch: Record<string, unknown> = { status };
   if (status !== 'processing') patch.completed_at = new Date().toISOString();
@@ -254,7 +202,7 @@ async function persistResult(
   processingMs: number,
   isRetry       = false,
 ): Promise<void> {
-  const db = getSupabase();
+  const db = getSupabaseServiceRole();
 
   // ── Idempotency guard ─────────────────────────────────────
   const { data: existing, error: checkError } = await db
@@ -274,16 +222,17 @@ async function persistResult(
 
   // ── Insert ────────────────────────────────────────────────
   const { error } = await db.from('results').insert({
-    job_id:         jobId,
-    verdict:        result.verdict,
-    confidence:     result.confidence,
-    explanation:    result.explanation,
-    model_scores:   result.model_scores,
-    models_run:     result.models_run,
-    models_skipped: result.models_skipped,
-    signals:        result.top_signals,
-    caveat:         result.caveat,
-    processing_ms:  processingMs,
+    job_id:          jobId,
+    verdict:         result.verdict,
+    confidence:      result.confidence,
+    explanation:     result.explanation,
+    model_scores:    result.model_scores,
+    models_run:      result.models_run,
+    models_skipped:  result.models_skipped,
+    signals:         result.top_signals,
+    caveat:          result.caveat,
+    processing_ms:   processingMs,
+    model_evidence:    result.model_evidence ?? {},
   });
 
   if (error) {
@@ -308,10 +257,19 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
   await setJobStatus(jobId, 'processing');
 
   // ── Step 2: Download from Supabase storage ────────────────
-  const db = getSupabase();
+  const db = getSupabaseServiceRole();
+  let objectPath: string;
+  try {
+    objectPath = storageObjectPathFromFileUrl(fileUrl);
+  } catch {
+    log('error', jobId, `Invalid storage URL (expected public uploads URL): ${fileUrl}`);
+    await setJobStatus(jobId, 'failed');
+    throw new UnrecoverableError('Invalid file_url — cannot resolve storage path');
+  }
+
   const { data: fileBlob, error: downloadError } = await db.storage
     .from('uploads')
-    .download(fileUrl);
+    .download(objectPath);
 
   if (downloadError || !fileBlob) {
     const reason = downloadError?.message ?? 'empty response';
@@ -331,25 +289,140 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
     throw new UnrecoverableError(`File exceeds 100 MB limit (${sizeMb} MB)`);
   }
 
-  const filename = fileUrl.split('/').pop() ?? 'upload';
-  log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — calling ML`);
+  const filename = objectPath.split('/').pop() ?? 'upload';
+  // Infer MIME type from extension for Grok's vision input
+  const ext      = filename.split('.').pop()?.toLowerCase() ?? '';
+  const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+    : ext === 'png'  ? 'image/png'
+    : ext === 'gif'  ? 'image/gif'
+    : ext === 'webp' ? 'image/webp'
+    : 'image/jpeg';
 
-  // ── Step 4: ML inference ──────────────────────────────────
-  // callMlService throws UnrecoverableError on 4xx; throws regular Error on 5xx/timeout
-  // (BullMQ will retry regular errors per job.opts.attempts)
+  log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — SightEngine + Grok (parallel)`);
+
+  // ── Step 4: SightEngine ∥ Grok, then Claude ───────────────
   let mlResult: MlResult;
   try {
-    mlResult = await callMlService(mediaType, buffer, filename, jobId);
+    if (mediaType !== 'image') {
+      const sightEngineResult = await callSightEngine(mediaType, buffer, filename, jobId);
+      mlResult = {
+        ...sightEngineResult,
+        model_evidence: {
+          sightengine: {
+            ai_likeness: sightEngineResult.confidence,
+            verdict:     sightEngineResult.verdict,
+            proof:       sightEngineResult.explanation,
+          },
+          grok:   { ran: false, skip_reason: 'Vision models only run on images' },
+          claude: { ran: false, skip_reason: 'Claude synthesis runs after image vision pipeline' },
+        },
+      };
+    } else {
+      const [sightEngineResult, grokOutcome] = await Promise.all([
+        callSightEngine(mediaType, buffer, filename, jobId),
+        callGrok(buffer, mimeType),
+      ]);
+
+      mlResult = { ...sightEngineResult };
+      mlResult.models_run     = Array.isArray(mlResult.models_run) ? mlResult.models_run : [];
+      mlResult.models_skipped = Array.isArray(mlResult.models_skipped) ? mlResult.models_skipped : [];
+
+      const grokResult =
+        grokOutcome.ok && isValidGrokResult(grokOutcome.data) ? grokOutcome.data : null;
+
+      if (grokResult) {
+        log('info', jobId,
+          `🤖 Grok result — assessment=${grokResult.assessment} confidence=${grokResult.confidence_pct}% ` +
+          `reasoning="${grokResult.reasoning}"`,
+        );
+        mlResult.model_scores   = { ...mlResult.model_scores, grok_grok4fast: grokResult.confidence_pct / 100 };
+        mlResult.models_run     = [...mlResult.models_run, 'grok_grok4fast'];
+      } else {
+        const why = !grokOutcome.ok
+          ? grokOutcome.reason
+          : 'Grok payload invalid or empty (check xAI response format)';
+        log('warn', jobId, `⏭  Grok skipped — ${why}`);
+        mlResult.models_skipped = [...mlResult.models_skipped, 'grok_grok4fast'];
+      }
+
+      const claudeOutcome = await callClaude(
+        buffer,
+        mimeType,
+        sightEngineResult.confidence,
+        sightEngineResult.verdict,
+        grokResult,
+      );
+
+      if (claudeOutcome.ok) {
+        const llm = claudeOutcome.data;
+        const proofN = (llm.proof_points ?? []).length;
+        log('info', jobId,
+          `🧠 Claude result — rate=${llm.confidence_pct}% verdict=${llm.verdict} proof_points=${proofN} ` +
+          `explanation="${(llm.explanation ?? '').slice(0, 120)}…" caveat=${llm.caveat ?? 'none'}`,
+        );
+        mlResult.model_scores = {
+          ...mlResult.model_scores,
+          claude_haiku: llm.confidence_pct / 100,
+        };
+        mlResult.verdict     = llm.verdict;
+        mlResult.explanation = llm.explanation;
+        mlResult.top_signals = Array.isArray(llm.top_signals) ? llm.top_signals : [];
+        mlResult.caveat      = llm.caveat;
+        mlResult.models_run  = [...new Set([...mlResult.models_run, 'claude_haiku'])];
+      } else {
+        log('warn', jobId, `⏭  Claude skipped — ${claudeOutcome.reason}`);
+        mlResult.models_skipped = [...mlResult.models_skipped, 'claude_haiku'];
+      }
+
+      mlResult.verdict = resolveFinalVerdict(
+        sightEngineResult.confidence,
+        sightEngineResult.verdict,
+        grokResult,
+        claudeOutcome.ok ? claudeOutcome.data.verdict : null,
+      );
+
+      mlResult.model_evidence = {
+        sightengine: {
+          ai_likeness: sightEngineResult.confidence,
+          verdict:     sightEngineResult.verdict,
+          proof:       sightEngineResult.explanation,
+        },
+        grok: grokResult
+          ? {
+              ran:             true,
+              assessment:      grokResult.assessment,
+              confidence_pct:  grokResult.confidence_pct,
+              proof:           grokResult.reasoning,
+            }
+          : {
+              ran: false,
+              skip_reason: !grokOutcome.ok ? grokOutcome.reason : 'Grok payload invalid or empty',
+            },
+        claude: claudeOutcome.ok
+          ? {
+              ran:            true,
+              confidence_pct: claudeOutcome.data.confidence_pct,
+              proof_points:   claudeOutcome.data.proof_points ?? [],
+            }
+          : { ran: false, skip_reason: claudeOutcome.reason },
+      };
+
+      const blended = blendAiLikeness(mlResult.model_scores);
+      if (blended != null) mlResult.confidence = blended;
+    }
   } catch (err) {
     await setJobStatus(jobId, 'failed');
-    throw err; // re-throw so BullMQ handles retry vs. drop decision
+    throw err;
   }
+
+  mlResult.models_run     = Array.isArray(mlResult.models_run) ? mlResult.models_run : [];
+  mlResult.models_skipped = Array.isArray(mlResult.models_skipped) ? mlResult.models_skipped : [];
 
   const processingMs = Date.now() - t0;
   log(
     'info',
     jobId,
-    `🤖 ML done — verdict=${mlResult.verdict} confidence=${(mlResult.confidence * 100).toFixed(1)}% ` +
+    `✅ Analysis done — verdict=${mlResult.verdict} confidence=${(mlResult.confidence * 100).toFixed(1)}% ` +
     `models=${mlResult.models_run.join(',')} in ${processingMs}ms`,
   );
 
@@ -410,7 +483,7 @@ try {
   });
 
   console.log(
-    `[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, ML_SERVICE=${ML_SERVICE_URL}`,
+    '[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, backend=SightEngine+Grok+Claude',
   );
 } catch (err) {
   console.warn('[worker] ⚠️  Failed to start — Redis likely unavailable:', (err as Error).message);
@@ -437,6 +510,42 @@ process.once('SIGINT',  () => void shutdown('SIGINT'));
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Mean AI-likeness (0–1) across sightengine_genai, grok_grok4fast, claude_haiku when present. */
+function blendAiLikeness(modelScores: Record<string, number | null>): number | null {
+  const keys = ['sightengine_genai', 'grok_grok4fast', 'claude_haiku'] as const;
+  const parts: number[] = [];
+  for (const k of keys) {
+    const v = modelScores[k];
+    if (typeof v === 'number' && !Number.isNaN(v)) parts.push(v);
+  }
+  if (parts.length === 0) return null;
+  return parts.reduce((a, b) => a + b, 0) / parts.length;
+}
+
+/** Raw genai score at or above this (majority AI-likeness) → AI regardless of Grok/Claude. */
+const SE_AI_SCORE_THRESHOLD = 0.5;
+
+/**
+ * SightEngine raw score ≥ {@link SE_AI_SCORE_THRESHOLD} → always AI_GENERATED.
+ * Else if SE threshold verdict is AI_GENERATED → AI_GENERATED.
+ * Else Grok preferred when present; else Claude; else SE.
+ */
+function resolveFinalVerdict(
+  seScore:   number,
+  seVerdict: MlResult['verdict'],
+  grok:      GrokResult | null,
+  claude:    MlResult['verdict'] | null,
+): MlResult['verdict'] {
+  if (seScore >= SE_AI_SCORE_THRESHOLD) return 'AI_GENERATED';
+  if (seVerdict === 'AI_GENERATED') return 'AI_GENERATED';
+  if (grok) {
+    if (grok.assessment === 'LIKELY_AI') return 'AI_GENERATED';
+    if (grok.assessment === 'LIKELY_REAL') return 'HUMAN';
+  }
+  if (claude) return claude;
+  return seVerdict;
 }
 
 export { worker as analysisWorker };

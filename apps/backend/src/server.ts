@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './loadEnv';
 import { app } from './app';
 // Import worker so it registers against the queue on startup.
 // The module handles its own Redis availability check gracefully.

@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 
@@ -28,8 +30,9 @@ export function isValidUUID(uuid: string): boolean {
 
 // Validate job ID parameter
 export function validateJobId(req: Request, res: Response, next: NextFunction) {
-  const { id } = req.params;
-  
+  const raw = req.params.id;
+  const id = Array.isArray(raw) ? raw[0] : raw;
+
   if (!id || !isValidUUID(id)) {
     res.status(400).json({
       error: 'Invalid job ID format'
@@ -55,14 +58,37 @@ export function validateMediaType(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-// Sanitize filename (prevent malicious filenames)
+/**
+ * Produce a Storage-safe object name: Supabase rejects keys with spaces, colons,
+ * and many Unicode chars (common in macOS screenshot names).
+ */
 export function sanitizeFilename(filename: string): string {
-  // Remove directory separators and special characters
-  return filename
-    .replace(/[\/\\]/g, '') // Remove slashes
-    .replace(/[<>:"|?*]/g, '') // Remove Windows reserved chars
-    .replace(/\.\./g, '') // Remove double dots
-    .substring(0, 255); // Limit length
+  const stripped = filename
+    .replace(/[\/\\]/g, '')
+    .replace(/\.\./g, '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const safe = stripped
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^\.+|\.+$/g, '');
+
+  const out = (safe || 'upload').substring(0, 200);
+  return out;
+}
+
+/**
+ * Unique ASCII-only object key for Supabase Storage — avoids Invalid key errors
+ * from Unicode, spaces, or special characters in original filenames.
+ * Shape: `{ms}_{16-hex}{optional_ext}`
+ */
+export function storageObjectKey(originalFilename: string): string {
+  const rawExt = path.extname(originalFilename || '').toLowerCase();
+  const ext = rawExt.replace(/[^a-z0-9.]/g, '');
+  const safeExt =
+    ext.length >= 2 && ext.length <= 12 && ext.startsWith('.') ? ext : '';
+  return `${Date.now()}_${randomBytes(8).toString('hex')}${safeExt}`;
 }
 
 // Validate URL format (basic check)

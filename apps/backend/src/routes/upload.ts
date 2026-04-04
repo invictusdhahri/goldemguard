@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { upload } from '../middleware/upload';
-import { supabase } from '../services/supabase';
-import { validateFileSize, sanitizeFilename } from '../middleware/validation';
+import { createSupabaseWithAccessToken } from '../services/supabase';
+import { validateFileSize, storageObjectKey } from '../middleware/validation';
 import multer from 'multer';
 
 export const uploadRouter = Router();
@@ -33,18 +33,18 @@ uploadRouter.post(
         return;
       }
 
-      // Step 3: Create a unique file path with sanitized filename
-      const timestamp = Date.now();
-      const sanitizedName = sanitizeFilename(file.originalname);
-      const fileName = `${timestamp}_${sanitizedName}`;
+      // Step 3: Unique ASCII-only storage key (original names often break Storage)
+      const fileName = storageObjectKey(file.originalname);
       const filePath = `${userId}/${fileName}`;
 
-      // Step 4: Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('uploads')  // Bucket name - you need to create this in Supabase
+      const db = createSupabaseWithAccessToken(req.accessToken!);
+
+      // Step 4: Upload to Supabase Storage (RLS requires authenticated user context)
+      const { error } = await db.storage
+        .from('uploads')
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
-          upsert: false  // Don't overwrite if file exists
+          upsert: false,
         });
 
       // Step 5: Check for errors
@@ -55,7 +55,7 @@ uploadRouter.post(
       }
 
       // Step 6: Get the public URL
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = db.storage
         .from('uploads')
         .getPublicUrl(filePath);
 

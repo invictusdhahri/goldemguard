@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
-import { supabase } from '../services/supabase';
+import { createSupabaseWithAccessToken } from '../services/supabase';
 import { analysisQueue } from '../services/queue';
 
 export const analyzeRouter = Router();
@@ -20,7 +20,9 @@ analyzeRouter.post('/', requireAuth, async (req: AuthRequest, res) => {
 
   const { file_url, media_type } = parsed.data;
 
-  const { data: job, error } = await supabase
+  const db = createSupabaseWithAccessToken(req.accessToken!);
+
+  const { data: job, error } = await db
     .from('analysis_jobs')
     .insert({
       user_id: req.userId,

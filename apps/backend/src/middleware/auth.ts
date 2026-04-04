@@ -3,6 +3,8 @@ import { supabase } from '../services/supabase';
 
 export interface AuthRequest extends Request {
   userId?: string;
+  /** JWT from Authorization header — use with createSupabaseWithAccessToken for RLS */
+  accessToken?: string;
 }
 
 export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
@@ -21,5 +23,6 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
   }
 
   req.userId = data.user.id;
+  req.accessToken = token;
   next();
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, type AuthRequest } from '../middleware/auth';
-import { supabase } from '../services/supabase';
+import { createSupabaseWithAccessToken } from '../services/supabase';
 
 export const historyRouter = Router();
 
@@ -16,7 +16,9 @@ historyRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
   );
   const offset = isNaN(offsetParam) ? 0 : Math.max(0, offsetParam);
 
-  const { data: jobs, error } = await supabase
+  const db = createSupabaseWithAccessToken(req.accessToken!);
+
+  const { data: jobs, error } = await db
     .from('analysis_jobs')
     .select(
       `
