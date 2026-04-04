@@ -1,8 +1,21 @@
+import Header from "@/components/landing/Header";
+import Hero from "@/components/landing/Hero";
+import Stats from "@/components/landing/Stats";
+import BentoFeatures from "@/components/landing/BentoFeatures";
+import FallbackChain from "@/components/landing/FallbackChain";
+import CTA from "@/components/landing/CTA";
+import Footer from "@/components/landing/Footer";
+
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">VeritasAI</h1>
-      <p className="mt-4 text-lg text-gray-600">Detect. Explain. Trust.</p>
+    <main style={{ background: "#07070e", minHeight: "100vh" }}>
+      <Header />
+      <Hero />
+      <Stats />
+      <BentoFeatures />
+      <FallbackChain />
+      <CTA />
+      <Footer />
     </main>
   );
 }

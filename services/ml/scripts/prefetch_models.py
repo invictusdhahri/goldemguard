@@ -33,24 +33,28 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 MODELS = [
-    "prithivMLmods/deepfake-detector-model-v1",
-    "Organika/sdxl-detector",
-    "Wvolf/ViT_Deepfake_Detection",
+    ("image-classification", "prithivMLmods/deepfake-detector-model-v1"),
+    ("image-classification", "Organika/sdxl-detector"),
+    ("image-classification", "Wvolf/ViT_Deepfake_Detection"),
+    ("audio-classification", "MTUCI/AASIST3"),
+    ("automatic-speech-recognition", "openai/whisper-tiny"),
+    ("image-classification", "Deressa/GenConViT"),
 ]
 
 
 def main() -> None:
     from transformers import pipeline
 
-    for model_id in MODELS:
+    for task, model_id in MODELS:
         logger.info(
-            "Prefetch %s via transformers (inference files only; per-file tqdm may follow) ...",
+            "Prefetch %s (%s) via transformers ...",
             model_id,
+            task,
         )
         logger.info(
             "If the bar looks stuck at 0%%: first shard is often slow; watch ~/.cache/huggingface/ size growing.",
         )
-        pipeline("image-classification", model=model_id, device=-1)
+        pipeline(task, model=model_id, device=-1)
         logger.info("Finished %s", model_id)
     logger.info("Done. Weights are under ~/.cache/huggingface/ (or HF_HOME).")
 
