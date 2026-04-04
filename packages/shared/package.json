@@ -1,0 +1,22 @@
+{
+  "name": "@veritas/shared",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint src/",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@veritas/tsconfig": "workspace:*",
+    "typescript": "^5.8.3"
+  }
+}

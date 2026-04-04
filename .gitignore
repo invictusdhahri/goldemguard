@@ -1,0 +1,55 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+.next/
+out/
+
+# turbo
+.turbo/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+venv/
+.venv/
+*.egg
+
+# ML models (large files)
+services/ml/models/
+*.pt
+*.pth
+*.bin
+*.safetensors
+!*.gitkeep
+
+# logs
+*.log
+npm-debug.log*
+
+# testing
+coverage/
+.nyc_output/
+
+# misc
+*.tsbuildinfo
