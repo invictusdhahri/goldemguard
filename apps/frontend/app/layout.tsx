@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     'Multimodal AI-generated content detection with SightEngine, Grok, Claude, Resemble, and Sapling—fused into plain-English verdicts with explainable evidence.',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html

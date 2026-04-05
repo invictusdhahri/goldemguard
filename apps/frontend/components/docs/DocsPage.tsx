@@ -184,7 +184,7 @@ export function DocsPage() {
                 </li>
                 <li>
                   <strong className="text-foreground">DEPLOYMENT.md</strong> — Frontend (e.g. Vercel), backend (e.g.
-                  Railway), ML hosting, Supabase, environment variables.
+                  Render), ML hosting, Supabase, environment variables.
                 </li>
                 <li>
                   <strong className="text-foreground">README.md</strong> (this folder) — Index of the above plus a task
@@ -278,8 +278,8 @@ export function DocsPage() {
                   <strong className="text-foreground">Extension:</strong> Vite, React, Chrome MV3
                 </li>
                 <li className="rounded-xl border border-border bg-secondary/50 px-4 py-3">
-                  <strong className="text-foreground">Deployment:</strong> Vercel (frontend), Railway or similar (backend),
-                  managed Redis, Supabase cloud
+                  <strong className="text-foreground">Deployment:</strong> Vercel (frontend), Render (backend + Redis),
+                  Supabase cloud
                 </li>
               </ul>
             </DocsSection>

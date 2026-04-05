@@ -1,335 +1,164 @@
 # VeritasAI Deployment Guide
 
-This document covers deploying all three VeritasAI services to their respective hosting platforms.
+This document covers deploying VeritasAI to **Supabase** (database and storage), **Vercel** (Next.js frontend), and **Render** (Express API + Redis-compatible queue).
 
 ---
 
 ## Overview
 
-| Service | Platform | URL |
-|---------|----------|-----|
-| Frontend (Next.js) | Vercel | `https://veritasai.vercel.app` |
-| Backend (Express) | Railway | `https://veritasai-api.up.railway.app` |
-| ML Service (FastAPI) | HuggingFace Spaces | `https://huggingface.co/spaces/<org>/veritasai-ml` |
-| Database | Supabase | Dashboard at `https://supabase.com/dashboard` |
+| Service | Platform | Notes |
+|---------|----------|--------|
+| Frontend (Next.js) | [Vercel](https://vercel.com) | Root directory `apps/frontend`; see `apps/frontend/vercel.json` |
+| Backend (Express + worker) | [Render](https://render.com) | Docker image from `Dockerfile.backend`; Blueprint `render.yaml` |
+| Queue / cache | [Render Key Value](https://render.com/docs/key-value) | Redis®-compatible; `REDIS_URL` wired in Blueprint |
+| Database & auth | [Supabase](https://supabase.com) | Postgres, Storage bucket `uploads`, Auth |
 
-All platforms offer free tiers sufficient for the hackathon.
-
----
-
-## 1. Supabase Setup
-
-Supabase provides PostgreSQL, file storage, authentication, and row-level security.
-
-### 1.1 Create Project
-
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note your **Project URL** and **anon/public key** from Settings > API
-3. Note the **service_role key** (used by the backend only, never exposed to the client)
-
-### 1.2 Create Tables
-
-Run the following SQL in the Supabase SQL Editor:
-
-```sql
--- Users table
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  plan TEXT DEFAULT 'free'
-);
-
--- Analysis jobs table
-CREATE TABLE analysis_jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) NOT NULL,
-  file_url TEXT NOT NULL,
-  media_type TEXT NOT NULL,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  completed_at TIMESTAMPTZ
-);
-
--- Results table
-CREATE TABLE results (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id UUID REFERENCES analysis_jobs(id) NOT NULL,
-  verdict TEXT NOT NULL,
-  confidence FLOAT NOT NULL,
-  explanation TEXT NOT NULL,
-  model_scores JSONB NOT NULL,
-  models_run JSONB NOT NULL,
-  models_skipped JSONB NOT NULL,
-  signals JSONB NOT NULL,
-  caveat TEXT,
-  processing_ms INTEGER
-);
-```
-
-### 1.3 Enable Row Level Security
-
-```sql
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE analysis_jobs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE results ENABLE ROW LEVEL SECURITY;
-
--- Users can only read their own data
-CREATE POLICY "Users can read own data" ON users
-  FOR SELECT USING (auth.uid() = id);
-
--- Users can only see their own jobs
-CREATE POLICY "Users can read own jobs" ON analysis_jobs
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own jobs" ON analysis_jobs
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Users can only see results for their own jobs
-CREATE POLICY "Users can read own results" ON results
-  FOR SELECT USING (
-    job_id IN (SELECT id FROM analysis_jobs WHERE user_id = auth.uid())
-  );
-```
-
-### 1.4 Create Storage Bucket
-
-1. Go to Storage in the Supabase dashboard
-2. Create a new bucket called `uploads`
-3. Set the bucket to **private** (authenticated access only)
-4. Set max file size to **50MB**
-
-### 1.5 Enable Auth Providers
-
-1. Go to Authentication > Providers
-2. Enable **Email** (enabled by default)
-3. Optionally enable **Google OAuth** with your Google Cloud credentials
+Optional: **HuggingFace Spaces** for the standalone Python ML app under `services/ml` (not required for the main product; detection runs in the Node backend).
 
 ---
 
-## 2. Frontend Deployment (Vercel)
+## 1. Supabase
 
-### 2.1 Connect Repository
+### 1.1 Create or select a project
 
-1. Go to [vercel.com](https://vercel.com) and import the GitHub repository
-2. Set the **Root Directory** to `apps/frontend`
-3. Framework preset will auto-detect as **Next.js**
+1. In the [Supabase dashboard](https://supabase.com/dashboard), create a project (or use an existing one).
+2. From **Settings → API**, copy:
+   - **Project URL** → `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon public** key → `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role** key → `SUPABASE_SERVICE_ROLE_KEY` (backend only; never expose to the browser)
 
-### 2.2 Environment Variables
+### 1.2 Apply database migrations
 
-Add these in the Vercel dashboard under Settings > Environment Variables:
+Schema lives in `supabase/migrations/`. Apply them in timestamp order:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_API_URL=https://veritasai-api.up.railway.app/api
-```
+- **CLI** (recommended): [Supabase CLI](https://supabase.com/docs/guides/cli) — `supabase db push` or link the project and run migrations.
+- **Dashboard**: SQL Editor — paste each migration file’s contents in order.
+- **MCP**: If you use the Supabase MCP in Cursor, `apply_migration` can run the same SQL.
 
-### 2.3 Build Settings
+The initial migration creates tables (`users`, `analysis_jobs`, `results`), RLS policies, the private **`uploads`** storage bucket (50MB limit), and follow-up migrations add auth sync, `model_evidence`, `content_hash`, and trial credits.
 
-Vercel auto-detects these, but verify:
+### 1.3 Auth providers
 
-- **Build Command**: `cd ../.. && pnpm build --filter=@veritas/frontend`
-- **Output Directory**: `.next`
-- **Install Command**: `cd ../.. && pnpm install`
-
-### 2.4 Deploy
-
-Push to `main` branch. Vercel deploys automatically on every push.
+Under **Authentication → Providers**, keep **Email** enabled (and optionally **Google**).
 
 ---
 
-## 3. Backend Deployment (Railway)
+## 2. Frontend (Vercel)
 
-### 3.1 Create Service
+### 2.1 Import the repository
 
-1. Go to [railway.app](https://railway.app) and create a new project
-2. Connect the GitHub repository
-3. Set the **Root Directory** to `apps/backend`
+1. In [Vercel](https://vercel.com), **Add New → Project** and import this GitHub repo.
+2. Set **Root Directory** to `apps/frontend`.
+3. Framework: **Next.js** (auto-detected).  
+   `apps/frontend/vercel.json` sets install/build to run the monorepo from the repo root with pnpm + Turborepo.
 
-### 3.2 Environment Variables
+### 2.2 Environment variables
 
-**Required (core API + worker + Supabase):**
+In **Settings → Environment Variables** (Production, Preview, Development as needed):
 
-```
-PORT=4000
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-JWT_SECRET=your-random-secret-at-least-32-chars
-REDIS_URL=redis://default:password@your-redis-host:6379
-```
+| Name | Example / notes |
+|------|------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase **anon** key |
+| `NEXT_PUBLIC_API_URL` | Backend public URL ending in **`/api`** (e.g. `https://clawy-api.onrender.com/api`) |
 
-Async analysis runs in the backend worker using the third-party keys below (not a separate `ML_SERVICE_URL`; the optional Python app under `services/ml` is for standalone experiments).
+Redeploy after changing env vars.
 
-**Third-party detection / LLM keys** (set the ones you use; missing keys skip that detector with a documented reason in results):
+### 2.3 Deploy
 
-```
-SIGHTENGINE_API_USER=...
-SIGHTENGINE_API_SECRET=...
-XAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-RESEMBLE_API_KEY=...
-SAPLING_API_KEY=
-```
-
-### 3.3 Add Redis
-
-1. In the same Railway project, click **New Service** > **Database** > **Redis**
-2. Copy the internal `REDIS_URL` and set it as an environment variable on the backend service
-3. Railway provides a free Redis instance within the project
-
-### 3.4 Build & Start Commands
-
-```
-# Build
-cd ../.. && pnpm install && pnpm build --filter=@veritas/backend
-
-# Start
-node dist/server.js
-```
-
-### 3.5 Deploy
-
-Railway deploys automatically on push. Check logs at `railway.app` dashboard.
+Push to the connected branch; Vercel builds on every push.
 
 ---
 
-## 4. ML Service Deployment (HuggingFace Spaces)
+## 3. Backend (Render)
 
-### 4.1 Create Space
+The API needs **ffmpeg** on the host for video handling, so deployment uses **Docker** (`Dockerfile.backend`) rather than Render’s native Node runtime.
 
-1. Go to [huggingface.co/new-space](https://huggingface.co/new-space)
-2. Select **Docker** as the Space SDK
-3. Choose the **free CPU basic** tier (2 vCPU, 16GB RAM)
+### 3.1 Blueprint (recommended)
 
-### 4.2 Push Code
+1. In the [Render dashboard](https://dashboard.render.com), choose **New → Blueprint**.
+2. Connect this repository and select **`render.yaml`** at the repo root.
+3. On first apply, Render prompts for variables marked `sync: false` (Supabase URL and keys, optional API keys).
+4. After deploy, note the service URL (e.g. `https://clawy-api.onrender.com`). Set **`NEXT_PUBLIC_API_URL`** on Vercel to `https://<your-service>.onrender.com/api`.
 
-```bash
-cd services/ml
+The Blueprint provisions:
 
-# Initialize HF repo (first time only)
-git init
-git remote add hf https://huggingface.co/spaces/<org>/veritasai-ml
+- **Key Value** instance `clawy-cache` (private network only).
+- **Web service** `clawy-api` with `REDIS_URL` from the Key Value **connection string**, plus a generated **`JWT_SECRET`**.
 
-# Push
-git add .
-git commit -m "Deploy ML service"
-git push hf main
-```
+### 3.2 Manual Docker service (alternative)
 
-### 4.3 Environment Variables (Secrets)
+If you prefer not to use a Blueprint:
 
-In the Space settings, add:
+1. **New → Web Service**, connect the repo.
+2. **Environment**: **Docker**.
+3. **Dockerfile path**: `Dockerfile.backend`, **Docker build context**: `.` (repository root).
+4. Add the same environment variables as in `render.yaml` (see below). Create a [Key Value](https://render.com/docs/key-value) instance and set **`REDIS_URL`** to its internal connection string.
 
-```
-ANTHROPIC_API_KEY=your-anthropic-key
-GPTZERO_API_KEY=your-gptzero-key
-```
+### 3.3 Environment variables (backend)
 
-### 4.4 Dockerfile
+**Required:**
 
-The `services/ml/Dockerfile` is pre-configured:
+| Variable | Description |
+|----------|-------------|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Anon key (used where the API validates JWT + RLS) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (worker, storage, bypass RLS where intended) |
+| `JWT_SECRET` | At least 32 characters; signing user JWTs |
+| `REDIS_URL` | From Render Key Value `connectionString` (or external Redis) |
 
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libgl1 libglib2.0-0
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY app/ ./app/
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
+**Optional (detectors skip gracefully if unset):**
 
-HuggingFace Spaces will automatically build and deploy from this Dockerfile.
+`SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET`, `XAI_API_KEY`, `ANTHROPIC_API_KEY`, `RESEMBLE_API_KEY`, `SAPLING_API_KEY`
 
-### 4.5 Model Weights
+Render sets **`PORT`** automatically; the server reads `process.env.PORT`.
 
-Models are downloaded from HuggingFace Hub on first inference. For faster cold starts, you can pre-download weights in the Dockerfile:
+### 3.4 Free tier behavior
 
-```dockerfile
-RUN python -c "from transformers import pipeline; pipeline('image-classification', model='prithivMLmods/deepfake-detector-model-v1')"
-```
-
-### 4.6 Performance Notes
-
-- Video inference takes 25-45 seconds per 60-second clip on CPU
-- Pre-process demo videos and cache results for the presentation
-- For the live demo, use a 10-second clip to keep inference under 15 seconds
+On Render’s free tier, services **spin down** after idle time; first request may cold-start. Upgrade or keep the service warm for demos.
 
 ---
 
-## 5. Environment Variables Reference
+## 4. ML service (HuggingFace Spaces) — optional
+
+See the previous sections in the repo history or `services/ml` for a standalone FastAPI app. Core product analysis runs in **`@veritas/backend`**; this Space is optional for experiments.
+
+---
+
+## 5. Environment variables reference
 
 ### Backend (`apps/backend/.env`)
 
-```bash
-# Core — required
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-JWT_SECRET=your-random-secret-at-least-32-chars
-REDIS_URL=redis://localhost:6379
-PORT=4000
-
-# Third-party APIs — set per feature (see apps/backend/.env.example)
-SIGHTENGINE_API_USER=...
-SIGHTENGINE_API_SECRET=...
-XAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-RESEMBLE_API_KEY=...
-SAPLING_API_KEY=
-```
+See `apps/backend/.env.example` for the full list.
 
 ### Frontend (`apps/frontend/.env.local`)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ```
 
-### ML Service (`services/ml/.env`)
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-GPTZERO_API_KEY=your-gptzero-key
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
+For production, `NEXT_PUBLIC_API_URL` must be the Render API base ending in `/api`.
 
 ---
 
-## 6. Local Development Setup
+## 6. Local development
 
 ### Prerequisites
 
 ```bash
 node -v   # >= 20
 pnpm -v   # >= 10
-python3 --version  # >= 3.11
 redis-server --version  # any recent version
 ```
 
-### Step-by-step
+### Commands
 
 ```bash
-# 1. Install JS dependencies
 pnpm install
-
-# 2. Start Redis locally
 redis-server &
-
-# 3. Start frontend + backend (via Turborepo)
 pnpm dev
-
-# 4. In a separate terminal, start the ML service
-cd services/ml
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000 --reload-dir app
 ```
 
 ### Ports
@@ -338,41 +167,15 @@ uvicorn app.main:app --reload --port 8000 --reload-dir app
 |---------|------|
 | Frontend | 3001 |
 | Backend | 4000 |
-| ML Service | 8000 |
 | Redis | 6379 |
 
 ---
 
-## 7. CI/CD Notes
+## 7. CI/CD notes
 
-### Turborepo Caching
-
-Turborepo caches build outputs locally in `.turbo/`. For CI, enable remote caching:
-
-```bash
-npx turbo login
-npx turbo link
-```
-
-### Build Order
-
-Turborepo resolves the dependency graph automatically:
-
-```
-@veritas/tsconfig (no build)
-       │
-       ▼
-@veritas/shared (tsc)
-       │
-       ├──────────────┐
-       ▼              ▼
-@veritas/frontend  @veritas/backend
-  (next build)       (tsc)
-```
-
-### Monorepo-aware Deploys
-
-Both Vercel and Railway support monorepo setups. They will only rebuild when files in the relevant app directory (or shared dependencies) change.
+- **Turborepo** builds `@veritas/shared` before app packages; caches live under `.turbo/`.
+- **Vercel** and **Render** rebuild when files under the linked paths (or shared packages) change.
+- **Docker**: `docker build -f Dockerfile.backend -t clawy-api .` from the repo root (requires Docker locally).
 
 ---
 
@@ -380,9 +183,9 @@ Both Vercel and Railway support monorepo setups. They will only rebuild when fil
 
 | Issue | Solution |
 |-------|----------|
-| `pnpm install` fails with EPERM | Run outside sandbox or check filesystem permissions |
-| Next.js can't find `@veritas/shared` | Run `pnpm build --filter=@veritas/shared` first |
-| Redis connection refused | Start Redis: `redis-server` or check `REDIS_URL` |
-| ML service OOM on video | Reduce frame sampling rate or use a smaller model |
-| Claude API returns 401 | Check `ANTHROPIC_API_KEY` is set correctly |
-| HuggingFace Space stuck building | Check Dockerfile syntax and requirements.txt versions |
+| `pnpm install` fails with EPERM | Fix filesystem permissions or run outside a restricted sandbox |
+| Next.js cannot resolve `@veritas/shared` | Build shared first: `pnpm exec turbo build --filter=@veritas/shared` |
+| Redis connection refused | Set `REDIS_URL` to your Render Key Value URL or run Redis locally |
+| Video analysis errors mentioning ffmpeg | Use the Docker deployment on Render (`Dockerfile.backend` installs ffmpeg) |
+| Claude / xAI 401 | Verify the corresponding API key in Render env |
+| Browser cannot reach API | Set `NEXT_PUBLIC_API_URL` on Vercel to the Render URL with `/api`; check CORS (API uses open `cors()` by default) |

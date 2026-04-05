@@ -115,12 +115,12 @@ export default function TerminalDemo() {
         }}
       />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         {/* Section header */}
-        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-14">
+        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-10 sm:mb-14">
           <span className="badge-glass">Developer Experience</span>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-balance px-1"
             style={{ fontFamily: "var(--font-display)" }}
           >
             <span style={{ color: "var(--foreground)" }}>Integrate in</span>{" "}
@@ -139,26 +139,26 @@ export default function TerminalDemo() {
           >
             {/* Title bar */}
             <div
-              className="flex items-center gap-3 px-5 py-4"
+              className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-4 flex-wrap min-w-0"
               style={{
                 borderBottom: "1px solid var(--glass-border-subtle)",
                 background: "var(--glass-bg)",
               }}
             >
               {/* Traffic lights */}
-              <div className="flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                 <span className="w-3 h-3 rounded-full" style={{ background: "#ff5f57" }} />
                 <span className="w-3 h-3 rounded-full" style={{ background: "#febc2e" }} />
                 <span className="w-3 h-3 rounded-full" style={{ background: "#28c840" }} />
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-1 flex-1 ml-2">
+              <div className="flex items-center gap-1 flex-1 min-w-0 ml-0 sm:ml-2 overflow-x-auto pb-0.5 -mb-0.5">
                 {TABS.map((tab, i) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(i)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+                    className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all duration-200 flex-shrink-0"
                     style={{
                       fontFamily: "var(--font-mono)",
                       background: activeTab === i ? "var(--glass-bg-hover)" : "transparent",
@@ -173,7 +173,7 @@ export default function TerminalDemo() {
 
               {/* Status dot */}
               <span
-                className="flex items-center gap-1.5 text-xs"
+                className="hidden sm:flex items-center gap-1.5 text-xs flex-shrink-0"
                 style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
               >
                 <span
@@ -190,8 +190,8 @@ export default function TerminalDemo() {
 
             {/* Code body */}
             <div
-              className="p-6 min-h-[280px] overflow-x-auto"
-              style={{ fontFamily: "var(--font-mono)", fontSize: "13px", lineHeight: "1.7" }}
+              className="p-4 sm:p-6 min-h-[220px] sm:min-h-[280px] overflow-x-auto text-[11px] sm:text-[13px]"
+              style={{ fontFamily: "var(--font-mono)", lineHeight: "1.7" }}
             >
               {/* Line numbers + code */}
               {currentLines.slice(0, visibleLines).map((line, i) => (

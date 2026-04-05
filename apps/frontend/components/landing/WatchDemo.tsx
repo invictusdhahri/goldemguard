@@ -11,7 +11,7 @@ export default function WatchDemo() {
       className="relative section-padding overflow-hidden"
       style={{ background: "var(--background)" }}
     >
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         <FadeInUp>
           <div className="text-center mb-10">
             <h2

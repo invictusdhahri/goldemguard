@@ -154,7 +154,7 @@ function FeatureCard({ feature }: { feature: typeof FEATURES[0] }) {
 
       {/* Model badge */}
       <div
-        className="inline-flex self-start items-center px-2.5 py-1 rounded-lg text-xs"
+        className="inline-flex self-start items-center px-2.5 py-1 rounded-lg text-xs max-w-full break-words"
         style={{
           fontFamily: "var(--font-mono)",
           background: "var(--glass-bg)",
@@ -184,18 +184,18 @@ export default function BentoFeatures() {
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-14">
+        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-10 sm:mb-14">
           <span className="badge-glass">Detection Modalities</span>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-balance px-1"
             style={{ fontFamily: "var(--font-display)" }}
           >
             <span style={{ color: "var(--foreground)" }}>Detect Across</span>{" "}
             <span className="gradient-text-purple">Every Medium</span>
           </h2>
-          <p className="text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-sm sm:text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
             Production stack: SightEngine, xAI Grok, Anthropic Claude, Resemble, and Sapling—composed per modality with
             documented fusion. One backend API coordinates them all.
           </p>

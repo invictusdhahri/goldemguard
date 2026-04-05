@@ -67,18 +67,18 @@ export default function FallbackChain() {
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-16">
+        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-10 sm:mb-16">
           <span className="badge-glass">Always-On Architecture</span>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-balance px-1"
             style={{ fontFamily: "var(--font-display)" }}
           >
             <span style={{ color: "var(--foreground)" }}>A Verdict,</span>{" "}
             <span className="gradient-text">Every Single Time</span>
           </h2>
-          <p className="text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-sm sm:text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
             Defense in depth: multiple commercial APIs per modality, explicit fusion, and transparent skip reasons—built for demos you can defend in review.
           </p>
         </FadeInUp>

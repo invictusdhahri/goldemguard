@@ -45,11 +45,11 @@ export default function Footer() {
       className="relative pt-16 pb-8 overflow-hidden"
       style={{ background: "var(--background)", borderTop: "1px solid var(--border)" }}
     >
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <FadeInUp>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 sm:gap-10 mb-12">
             {/* Brand column */}
-            <div className="col-span-2 flex flex-col gap-4">
+            <div className="sm:col-span-2 md:col-span-2 flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2.5 group w-fit">
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center"

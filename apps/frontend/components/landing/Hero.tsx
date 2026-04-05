@@ -144,8 +144,8 @@ export default function Hero() {
       className="relative min-h-screen flex items-center pt-[64px] overflow-hidden"
       style={{ background: "var(--background)" }}
     >
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full py-20">
-        <div className="flex items-center gap-12 lg:gap-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 w-full py-16 sm:py-20">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-20 w-full">
           {/* Left — text content */}
           <div className="flex-1 flex flex-col gap-7">
             {/* Badge */}
@@ -173,7 +173,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.21, 0.47, 0.32, 0.98] as const }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] sm:leading-[1.05] tracking-tight text-balance"
               style={{ fontFamily: "var(--font-display)" }}
             >
               <span style={{ color: "var(--foreground)" }}>Detect AI Content</span>
@@ -186,7 +186,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="text-lg leading-relaxed max-w-xl"
+              className="text-base sm:text-lg leading-relaxed max-w-xl"
               style={{ color: "var(--muted-foreground)" }}
             >
               GolemGuard deploys four specialized detection models — across images, video, audio, and documents — with a self-healing fallback architecture that{" "}
@@ -210,7 +210,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-              className="flex items-center gap-8 sm:gap-10 pt-2"
+              className="flex items-center gap-5 sm:gap-8 md:gap-10 pt-2 flex-wrap"
             >
               {STATS.map((stat, i) => (
                 <div key={stat.label} className="flex flex-col gap-1">

@@ -15,7 +15,7 @@ const STACK = [
 export default function Partners() {
   return (
     <section className="relative py-12 overflow-hidden" style={{ background: "var(--background)" }}>
-      <FadeInUp className="text-center px-6">
+      <FadeInUp className="text-center px-4 sm:px-6">
         <p
           className="text-sm font-medium uppercase tracking-widest mb-4"
           style={{ color: "var(--muted-foreground)", letterSpacing: "0.12em" }}

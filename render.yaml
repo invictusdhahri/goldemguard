@@ -1,0 +1,54 @@
+# Render Blueprint: API + Redis-compatible cache for BullMQ.
+# https://render.com/docs/infrastructure-as-code
+#
+# After connecting this repo, open Render → New → Blueprint → select this file.
+# You will be prompted for Supabase keys (sync: false) on first apply.
+
+version: "1"
+
+services:
+  # Private Redis®-compatible store; REDIS_URL is injected into the web service.
+  - type: keyvalue
+    name: clawy-cache
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  - type: web
+    name: clawy-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          name: clawy-cache
+          type: keyvalue
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Optional third-party detectors (add in dashboard if you use them)
+      - key: SIGHTENGINE_API_USER
+        sync: false
+      - key: SIGHTENGINE_API_SECRET
+        sync: false
+      - key: XAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: RESEMBLE_API_KEY
+        sync: false
+      - key: SAPLING_API_KEY
+        sync: false

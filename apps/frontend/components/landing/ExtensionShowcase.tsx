@@ -124,22 +124,22 @@ export default function ExtensionShowcase() {
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section header */}
-        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-16">
+        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-10 sm:mb-16">
           <span className="badge-glass">
             <AppWindow size={13} />
             Browser Extension
           </span>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-balance px-1"
             style={{ fontFamily: "var(--font-display)" }}
           >
             <span style={{ color: "var(--foreground)" }}>Find the truth </span>
             <span className="gradient-text">everywhere</span>
           </h2>
           <p
-            className="text-base max-w-2xl leading-relaxed"
+            className="text-sm sm:text-base max-w-2xl leading-relaxed px-1"
             style={{ color: "var(--muted-foreground)" }}
           >
             Our Chrome extension works on Facebook, generic pages, and anywhere you browse. It
@@ -149,7 +149,7 @@ export default function ExtensionShowcase() {
           </p>
         </FadeInUp>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-14 items-center">
           {/* Left: Mock Twitter feed with extension overlay */}
           <FadeInUp delay={0.1}>
             <div
@@ -158,20 +158,20 @@ export default function ExtensionShowcase() {
             >
               {/* Browser chrome bar */}
               <div
-                className="flex items-center gap-3 px-5 py-3.5"
+                className="flex items-center gap-2 sm:gap-3 px-3 py-3 sm:px-5 sm:py-3.5 min-w-0"
                 style={{
                   borderBottom: "1px solid var(--glass-border-subtle)",
                   background: "var(--glass-bg)",
                 }}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   <span className="w-3 h-3 rounded-full" style={{ background: "#ff5f57" }} />
                   <span className="w-3 h-3 rounded-full" style={{ background: "#febc2e" }} />
                   <span className="w-3 h-3 rounded-full" style={{ background: "#28c840" }} />
                 </div>
 
                 <div
-                  className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                  className="flex-1 min-w-0 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs truncate"
                   style={{
                     background: "var(--glass-bg-hover)",
                     border: "1px solid var(--glass-border-subtle)",
@@ -179,13 +179,13 @@ export default function ExtensionShowcase() {
                     fontFamily: "var(--font-mono)",
                   }}
                 >
-                  <X size={12} />
-                  x.com/home
+                  <X size={12} className="flex-shrink-0 hidden sm:block" />
+                  <span className="truncate">x.com/home</span>
                 </div>
 
                 {/* Extension icon in toolbar */}
                 <div
-                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-semibold"
+                  className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold flex-shrink-0"
                   style={{
                     background: "color-mix(in srgb, var(--color-cyan) 12%, transparent)",
                     border: "1px solid color-mix(in srgb, var(--color-cyan) 22%, transparent)",
@@ -404,12 +404,12 @@ export default function ExtensionShowcase() {
 
                 <a
                   href="#"
-                  className="btn-primary justify-center text-sm"
-                  style={{ padding: "12px 24px", borderRadius: 12 }}
+                  className="btn-primary justify-center text-sm text-center flex-wrap gap-2"
+                  style={{ padding: "12px 18px", borderRadius: 12 }}
                 >
-                  <AppWindow size={15} />
-                  Add to Chrome — It&apos;s Free
-                  <ArrowRight size={14} />
+                  <AppWindow size={15} className="flex-shrink-0" />
+                  <span className="min-w-0">Add to Chrome — It&apos;s Free</span>
+                  <ArrowRight size={14} className="flex-shrink-0" />
                 </a>
               </div>
             </FadeInUp>

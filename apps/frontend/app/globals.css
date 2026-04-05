@@ -614,6 +614,13 @@ body {
   }
 }
 
+@media (max-width: 380px) {
+  .section-padding {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}
+
 /* ─── Minecraft-style verdict bursts (chat + upload result) ───────── */
 
 .mc-pixel-burst-positive,

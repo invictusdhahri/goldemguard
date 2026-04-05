@@ -21,11 +21,11 @@ export default function CTA() {
         }}
       />
 
-      <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
         <FadeInUp>
           {/* Liquid glass card */}
           <div
-            className="relative overflow-hidden rounded-3xl p-10 lg:p-14"
+            className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-10 lg:p-14"
             style={{
               background: "var(--glass-bg)",
               backdropFilter: "blur(28px)",
@@ -54,14 +54,14 @@ export default function CTA() {
             </div>
 
             <h2
-              className="text-4xl lg:text-5xl font-bold tracking-tight mb-4"
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-balance"
               style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
             >
               Ready to Expose{" "}
               <span className="gradient-text">AI-Generated Content</span>?
             </h2>
 
-            <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-sm sm:text-base mb-8 sm:mb-10 max-w-lg mx-auto" style={{ color: "var(--muted-foreground)" }}>
               Join researchers, journalists, and enterprises who trust GolemGuard to distinguish real from generated.
             </p>
 

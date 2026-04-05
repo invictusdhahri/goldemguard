@@ -1,0 +1,19 @@
+# Dependencies and build outputs (rebuilt in the image)
+**/node_modules
+**/.next
+**/dist
+.turbo
+
+# Git and local env
+.git
+.gitignore
+.env
+.env.*
+
+# Large assets not needed for API build
+apps/frontend/public/**/*.mp4
+
+# Docs and tooling
+**/*.md
+.cursor
+agent-tools

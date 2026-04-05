@@ -65,21 +65,21 @@ export default function Pricing() {
         }}
       />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
         <FadeInUp>
-          <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
             <span className="badge-glass inline-flex items-center gap-1.5 mb-4">
               <Sparkles size={12} style={{ color: "var(--color-cyan)" }} />
               Subscription & trial
             </span>
             <h2
-              className="text-4xl md:text-5xl font-bold tracking-tight mb-4"
+              className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 text-balance px-1"
               style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
             >
               One credit pool,{" "}
               <span className="gradient-text">every surface</span>
             </h2>
-            <p className="text-base leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-sm sm:text-base leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
               Your free trial is not a time limit alone — it is a balance of credits shared across the web app and
               the extension. Uploading a file for deep analysis, running Verify Chat, or revealing a page in the
               extension each consumes one credit until the balance hits zero. Then you will see an upgrade prompt;
@@ -87,11 +87,11 @@ export default function Pricing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className="relative flex flex-col rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
+                className="relative flex flex-col rounded-2xl sm:rounded-3xl p-6 sm:p-8 transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   background: tier.primary ? "var(--glass-bg)" : "var(--background)",
                   border: `1px solid ${tier.primary ? "var(--color-cyan)" : "var(--glass-border)"}`,
