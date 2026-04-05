@@ -1,390 +1,233 @@
-'use client';
+'use client'
 
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import {
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-  ArrowLeft,
-  Sparkles,
-  Eye,
-  BrainCircuit,
-  Zap,
-} from 'lucide-react';
-import { useJobStatus, useResult } from '@/hooks/useAnalysis';
-import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
-import { useAuth } from '@/hooks/useAuth';
-import { useEffect } from 'react';
-import InteractiveBackground from '../../../components/InteractiveBackground';
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(
+  /\/$/,
+  '',
+)
 
-/** Aligns with backend `SE_AI_SCORE_THRESHOLD`: strong SightEngine AI-likeness → AI headline. */
-const SE_AI_DISPLAY_THRESHOLD = 0.5;
-
-function sightEngineRawScore(result: FinalResponse): number | undefined {
-  const s = result.model_scores?.sightengine_genai;
-  if (typeof s === 'number' && !Number.isNaN(s)) return s;
-  const ev = result.model_evidence?.sightengine?.ai_likeness;
-  if (typeof ev === 'number' && !Number.isNaN(ev)) return ev;
-  return undefined;
+interface Result {
+  verdict: 'REAL' | 'FAKE' | 'UNCERTAIN'
+  confidence: number
+  explanation: string
+  top_signals: string[]
+  model_scores: Record<string, number>
+  processing_ms: number
 }
 
-/** Prefer stored verdict unless SightEngine score forces AI (covers stale `UNCERTAIN` rows). */
-function effectiveVerdict(result: FinalResponse): Verdict {
-  const se = sightEngineRawScore(result);
-  if (se !== undefined && se >= SE_AI_DISPLAY_THRESHOLD) return 'AI_GENERATED';
-  return result.verdict;
+interface StatusPayload {
+  status: 'pending' | 'processing' | 'done' | 'failed'
 }
 
-function verdictPresentation(v: Verdict): {
-  headline: string;
-  subtitle: string;
-  tone: 'ai' | 'human' | 'uncertain';
-} {
-  switch (v) {
-    case 'AI_GENERATED':
-      return {
-        headline: 'Likely AI-generated',
-        subtitle: 'The image shows strong signals of synthetic or AI-produced content.',
-        tone: 'ai',
-      };
-    case 'HUMAN':
-      return {
-        headline: 'Likely authentic',
-        subtitle: 'The image is more consistent with real / human-created content.',
-        tone: 'human',
-      };
-    default:
-      return {
-        headline: 'Uncertain',
-        subtitle: 'The models could not confidently classify this image.',
-        tone: 'uncertain',
-      };
+interface ApiResultPayload {
+  verdict: string
+  confidence: number
+  explanation: string
+  top_signals?: string[]
+  model_scores?: Record<string, number>
+  processing_ms?: number
+}
+
+function mapApiVerdictToDisplay(v: string): Result['verdict'] {
+  if (v === 'AI_GENERATED') return 'FAKE'
+  if (v === 'HUMAN') return 'REAL'
+  return 'UNCERTAIN'
+}
+
+function normalizeResult(raw: ApiResultPayload): Result {
+  const scores = raw.model_scores ?? {}
+  const cleaned: Record<string, number> = {}
+  for (const [k, v] of Object.entries(scores)) {
+    if (typeof v === 'number' && !Number.isNaN(v)) cleaned[k] = v
+  }
+  return {
+    verdict: mapApiVerdictToDisplay(raw.verdict),
+    confidence: typeof raw.confidence === 'number' ? raw.confidence : 0,
+    explanation: raw.explanation ?? '',
+    top_signals: Array.isArray(raw.top_signals) ? raw.top_signals : [],
+    model_scores: cleaned,
+    processing_ms: typeof raw.processing_ms === 'number' ? raw.processing_ms : 0,
   }
 }
-
-function scoreBadge(score: number): { label: string; color: string } {
-  if (score >= 0.75) return { label: 'AI-generated', color: 'text-rose-400' };
-  if (score <= 0.35) return { label: 'Authentic',    color: 'text-emerald-400' };
-  return                    { label: 'Uncertain',    color: 'text-amber-400' };
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ResultPage() {
-  const params = useParams();
-  const router = useRouter();
-  const jobId  = typeof params.id === 'string' ? params.id : null;
-  const { user, loading: authLoading } = useAuth();
+  const params = useParams()
+  const jobId = typeof params.id === 'string' ? params.id : ''
 
-  const { data: job, error: statusError, isLoading: statusLoading } = useJobStatus(jobId);
-  const resultEnabled = job?.status === 'done';
-  const {
-    data:    result,
-    error:   resultError,
-    isLoading: resultLoading,
-  } = useResult(resultEnabled ? jobId : null);
+  const [status, setStatus] = useState<'pending' | 'processing' | 'done' | 'failed'>('pending')
+  const [result, setResult] = useState<Result | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
-  }, [user, authLoading, router]);
+    if (!jobId) {
+      setError('Invalid job link')
+      return
+    }
 
-  if (authLoading || !user) {
+    let cancelled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const pollStatus = async () => {
+      if (cancelled) return
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Not signed in. Log in and open this page again.')
+        return
+      }
+
+      try {
+        const statusRes = await fetch(`${API_BASE}/status/${jobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        const statusText = await statusRes.text()
+        let statusData: StatusPayload & { error?: string } = { status: 'pending' }
+        try {
+          statusData = statusText
+            ? (JSON.parse(statusText) as StatusPayload & { error?: string })
+            : statusData
+        } catch {
+          throw new Error('Invalid status response')
+        }
+
+        if (!statusRes.ok) {
+          throw new Error(statusData.error || `Request failed (${statusRes.status})`)
+        }
+
+        if (cancelled) return
+        setStatus(statusData.status)
+
+        if (statusData.status === 'done') {
+          const resultRes = await fetch(`${API_BASE}/result/${jobId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const resultText = await resultRes.text()
+          let resultJson: ApiResultPayload & { error?: string } = {} as ApiResultPayload
+          try {
+            resultJson = resultText
+              ? (JSON.parse(resultText) as ApiResultPayload & { error?: string })
+              : resultJson
+          } catch {
+            throw new Error('Invalid result response')
+          }
+          if (!resultRes.ok) {
+            throw new Error(resultJson.error || `Request failed (${resultRes.status})`)
+          }
+          if (!cancelled) setResult(normalizeResult(resultJson))
+          return
+        }
+
+        if (statusData.status === 'failed') {
+          if (!cancelled) setError('Analysis failed')
+          return
+        }
+
+        timeoutId = setTimeout(pollStatus, 2000)
+      } catch {
+        if (!cancelled) setError('Failed to fetch result')
+      }
+    }
+
+    pollStatus()
+
+    return () => {
+      cancelled = true
+      if (timeoutId !== null) clearTimeout(timeoutId)
+    }
+  }, [jobId])
+
+  if (error) {
     return (
-      <div className="min-h-screen bg-grid flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      <div className="mx-auto max-w-4xl px-4 py-12 text-center">
+        <div className="mb-4 text-6xl">❌</div>
+        <h1 className="mb-4 text-3xl font-bold text-red-600">Error</h1>
+        <p className="text-gray-600">{error}</p>
       </div>
-    );
+    )
   }
 
-  if (!jobId) {
+  if (status !== 'done' || !result) {
     return (
-      <div className="min-h-screen bg-grid flex items-center justify-center text-slate-400">
-        Invalid job link
+      <div className="mx-auto max-w-4xl px-4 py-12 text-center">
+        <div className="mb-4 animate-pulse text-6xl">🔍</div>
+        <h1 className="mb-4 text-3xl font-bold">Analyzing...</h1>
+        <p className="text-gray-600">
+          Status: <span className="font-semibold">{status}</span>
+        </p>
+        <div className="mt-8">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent" />
+        </div>
       </div>
-    );
+    )
   }
 
-  const failed    = job?.status === 'failed';
-  const processing = !job || job.status === 'pending' || job.status === 'processing';
+  const verdictColor =
+    result.verdict === 'FAKE'
+      ? 'text-red-600'
+      : result.verdict === 'REAL'
+        ? 'text-green-600'
+        : 'text-yellow-600'
+
+  const verdictEmoji =
+    result.verdict === 'FAKE' ? '🚫' : result.verdict === 'REAL' ? '✅' : '⚠️'
+
+  const confidencePct = Math.min(100, Math.max(0, result.confidence * 100))
 
   return (
-    <div className="min-h-screen bg-grid relative overflow-hidden">
-      <InteractiveBackground />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: '1s' }}
-        />
+    <div className="mx-auto max-w-4xl px-4 py-12">
+      <div className="mb-8 rounded-lg bg-white p-8 shadow-lg">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">{verdictEmoji}</div>
+          <h1 className={`mb-4 text-5xl font-bold ${verdictColor}`}>{result.verdict}</h1>
+          <div className="mb-4 text-3xl">{Math.round(confidencePct)}% Confidence</div>
+          <div className="mb-6 h-4 w-full rounded-full bg-gray-200">
+            <div
+              className="h-4 rounded-full bg-blue-600"
+              style={{ width: `${confidencePct}%` }}
+            />
+          </div>
+          <p className="text-xl text-gray-700">{result.explanation}</p>
+        </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-12 relative z-10">
-        <Link
-          href="/upload"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          New analysis
-        </Link>
+      <div className="mb-8 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-2xl font-bold">Detection Signals</h2>
+        <ul className="space-y-2">
+          {result.top_signals.map((signal, i) => (
+            <li key={i} className="flex items-start">
+              <span className="mr-2 text-blue-600">•</span>
+              <span>{signal}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold gradient-text-cyan font-[family-name:var(--font-display)]">
-            Analysis result
-          </h1>
-          <p className="text-slate-500 text-sm mt-2 font-mono truncate px-2">Job {jobId}</p>
-        </div>
-
-        {/* ── Loading / queued ── */}
-        {(statusLoading || processing) && (
-          <div className="glass-card rounded-2xl p-12 flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-            <p className="text-lg text-slate-300">
-              {job?.status === 'processing' ? 'Analyzing your file…' : 'Waiting in queue…'}
-            </p>
-            <p className="text-sm text-slate-500">This usually takes a few seconds</p>
-          </div>
-        )}
-
-        {/* ── Status error ── */}
-        {statusError && (
-          <div className="glass-card rounded-2xl p-6 border border-red-500/30 bg-red-500/5">
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertCircle className="w-6 h-6 shrink-0" />
-              <p>{statusError instanceof Error ? statusError.message : 'Could not load job'}</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Failed ── */}
-        {failed && (
-          <div className="glass-card rounded-2xl p-8 border border-amber-500/30 bg-amber-500/5">
-            <div className="flex items-center gap-3 text-amber-400 mb-2">
-              <XCircle className="w-8 h-8 shrink-0" />
-              <h2 className="text-xl font-semibold">Analysis failed</h2>
-            </div>
-            <p className="text-slate-400">
-              Something went wrong while processing this job. Try uploading again.
-            </p>
-          </div>
-        )}
-
-        {/* ── Result loading ── */}
-        {resultEnabled && resultLoading && (
-          <div className="glass-card rounded-2xl p-12 flex justify-center">
-            <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
-          </div>
-        )}
-
-        {/* ── Result error ── */}
-        {resultEnabled && resultError && (
-          <div className="glass-card rounded-2xl p-6 border border-red-500/30">
-            <p className="text-red-400">
-              {resultError instanceof Error ? resultError.message : 'Could not load result'}
-            </p>
-          </div>
-        )}
-
-        {/* ── Full result ── */}
-        {resultEnabled && result && (() => {
-          const { headline, subtitle, tone } = verdictPresentation(effectiveVerdict(result));
-          const Icon      = tone === 'ai' ? Sparkles : tone === 'human' ? CheckCircle2 : HelpCircle;
-          const ring      = tone === 'ai'
-            ? 'from-rose-500/30 to-fuchsia-500/20 border-rose-500/40'
-            : tone === 'human'
-              ? 'from-emerald-500/30 to-cyan-500/20 border-emerald-500/40'
-              : 'from-amber-500/30 to-orange-500/20 border-amber-500/40';
-          const iconColor = tone === 'ai' ? 'text-rose-400' : tone === 'human' ? 'text-emerald-400' : 'text-amber-400';
-
-          const seScore     = result.model_scores?.sightengine_genai as number | undefined;
-          const grokScore   = result.model_scores?.grok_grok4fast   as number | undefined;
-          const claudeScore = result.model_scores?.claude_haiku     as number | undefined;
-          const hasGrok     = result.models_run?.includes('grok_grok4fast');
-          const hasClaude   = result.models_run?.includes('claude_haiku');
-          const ev          = result.model_evidence as ModelEvidence | undefined;
-
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-2xl font-bold">Model Breakdown</h2>
+        {Object.entries(result.model_scores).map(([model, score]) => {
+          const pct = Math.min(100, Math.max(0, score * 100))
           return (
-            <div className="space-y-5">
-              {/* ── Verdict card ── */}
-              <div className="glass-card rounded-2xl p-8">
-                <div className={`rounded-2xl border bg-gradient-to-br p-8 text-center ${ring}`}>
-                  <div className="flex justify-center mb-4">
-                    <Icon className={`w-16 h-16 ${iconColor}`} strokeWidth={1.25} />
-                  </div>
-                  <h2 className="text-3xl font-bold text-white mb-2">{headline}</h2>
-                  <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">{subtitle}</p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2 mt-5">
-                  <div className="rounded-xl bg-slate-800/40 border border-slate-700/80 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">AI-likeness score</p>
-                    <p className="text-2xl font-semibold text-cyan-400 tabular-nums">
-                      {(result.confidence * 100).toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Blend of detector rates (0 = authentic · 100 = AI) when multiple models run
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-slate-800/40 border border-slate-700/80 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Processing time</p>
-                    <p className="text-2xl font-semibold text-white tabular-nums">
-                      {result.processing_ms != null ? `${result.processing_ms} ms` : '—'}
-                    </p>
-                  </div>
-                </div>
+            <div key={model} className="mb-4">
+              <div className="mb-1 flex justify-between">
+                <span className="font-semibold capitalize">{model.replace(/_/g, ' ')}</span>
+                <span>{Math.round(pct)}%</span>
               </div>
-
-              {/* ── Model breakdown ── */}
-              <div className="glass-card rounded-2xl p-6 space-y-4">
-                <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
-                  Model breakdown
-                </h3>
-
-                {/* SightEngine */}
-                <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-slate-700/60 p-4">
-                  <Eye className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-200">SightEngine genai</span>
-                      {seScore !== undefined && (
-                        <span className={`text-sm font-bold tabular-nums ${scoreBadge(seScore).color}`}>
-                          {(seScore * 100).toFixed(1)}% — {scoreBadge(seScore).label}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Dedicated AI-image detection model · raw score 0–100%
-                    </p>
-                    {ev?.sightengine?.proof && (
-                      <p className="text-xs text-slate-400 mt-2 leading-relaxed border-t border-slate-700/60 pt-2">
-                        <span className="text-slate-500">Evidence: </span>
-                        {ev.sightengine.proof}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* xAI Grok */}
-                <div className={`flex items-start gap-4 rounded-xl border p-4 ${
-                  hasGrok
-                    ? 'bg-slate-800/40 border-slate-700/60'
-                    : 'bg-slate-800/20 border-slate-700/30 opacity-50'
-                }`}>
-                  <Zap className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-200">xAI Grok 4.1 Fast</span>
-                      {grokScore !== undefined ? (
-                        <span className={`text-sm font-bold tabular-nums ${scoreBadge(grokScore).color}`}>
-                          {(grokScore * 100).toFixed(1)}% — {scoreBadge(grokScore).label}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-600">not run</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {hasGrok
-                        ? 'Vision LLM — independent assessment (runs in parallel with SightEngine)'
-                        : (ev?.grok && 'skip_reason' in ev.grok
-                          ? ev.grok.skip_reason
-                          : 'Did not run — check server logs or apps/backend/.env')}
-                    </p>
-                    {ev?.grok && 'proof' in ev.grok && ev.grok.proof && (
-                      <div className="mt-2 border-t border-slate-700/60 pt-2 space-y-1">
-                        <p className="text-[11px] uppercase tracking-wide text-violet-400/90">
-                          Grok assessment: {ev.grok.assessment.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                          <span className="text-slate-500">Evidence: </span>
-                          {ev.grok.proof}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Claude Haiku */}
-                <div className={`flex items-start gap-4 rounded-xl border p-4 ${
-                  hasClaude
-                    ? 'bg-slate-800/40 border-slate-700/60'
-                    : 'bg-slate-800/20 border-slate-700/30 opacity-50'
-                }`}>
-                  <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-200">Anthropic Claude Haiku</span>
-                      {hasClaude && claudeScore !== undefined ? (
-                        <span className={`text-sm font-bold tabular-nums ${scoreBadge(claudeScore).color}`}>
-                          {(claudeScore * 100).toFixed(1)}% — {scoreBadge(claudeScore).label}
-                        </span>
-                      ) : hasClaude ? (
-                        <span className="text-xs text-fuchsia-400 font-medium">Reasoning synthesis</span>
-                      ) : (
-                        <span className="text-xs text-slate-600">not run</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {hasClaude
-                        ? 'Vision rate (independent) plus reasoning synthesis — headline verdict, explanation, and proof bullets'
-                        : (ev?.claude && 'skip_reason' in ev.claude
-                          ? ev.claude.skip_reason
-                          : 'Did not run — check apps/backend/.env')}
-                    </p>
-                    {ev?.claude && 'proof_points' in ev.claude && ev.claude.proof_points.length > 0 && (
-                      <ul className="mt-2 border-t border-slate-700/60 pt-2 space-y-1.5">
-                        {ev.claude.proof_points.map((line: string, i: number) => (
-                          <li key={i} className="text-xs text-slate-400 leading-relaxed flex gap-2">
-                            <span className="text-fuchsia-500 shrink-0">{i + 1}.</span>
-                            <span>{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Claude explanation + signals ── */}
-              <div className="glass-card rounded-2xl p-6 space-y-4">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
-                    Explanation
-                    {hasClaude && <span className="ml-2 normal-case text-fuchsia-500/70">by Claude Haiku</span>}
-                  </p>
-                  <p className="text-slate-300 leading-relaxed">{result.explanation}</p>
-                </div>
-
-                {result.top_signals && result.top_signals.length > 0 && (
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
-                      Top signals
-                    </p>
-                    <ul className="space-y-1">
-                      {result.top_signals.map((s: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                          <span className="text-cyan-500 mt-0.5">›</span>
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {result.caveat && (
-                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/30 p-4">
-                    <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-1">Note</p>
-                    <p className="text-slate-400 text-sm">{result.caveat}</p>
-                  </div>
-                )}
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div
+                  className="h-2 rounded-full bg-blue-600"
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             </div>
-          );
-        })()}
+          )
+        })}
+        <p className="mt-4 text-sm text-gray-600">
+          Analysis completed in {result.processing_ms}ms
+        </p>
       </div>
     </div>
-  );
+  )
 }
