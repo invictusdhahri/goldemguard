@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #07070e;
+  --foreground: #e2e8f0;
+  --muted-foreground: #64748b;
+  --border: rgba(255, 255, 255, 0.06);
+  --cyan: #00d4ff;
+  --cyan-dim: #0ea5c9;
+  --purple: #8b5cf6;
+  --verified: #10b981;
+  --warn: #f59e0b;
+  --ai: #f43f5e;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  width: 380px;
+  min-height: 100px;
+}
+
+/* Thin custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #07070e; }
+::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.4); }
+
+/* Gradient text */
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #00d4ff 0%, #0ea5e9 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Dot grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Subtle scan line animation on loading */
+@keyframes scan {
+  0%   { top: 0%;    opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 100%;  opacity: 0; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.animate-spin-ext {
+  animation: spin 0.8s linear infinite;
+}

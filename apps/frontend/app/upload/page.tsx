@@ -6,6 +6,7 @@ import { Upload, ImageIcon, Video, Music, FileText, Zap, Shield, CheckCircle, Lo
 import Link from 'next/link'
 import InteractiveBackground from '../../components/InteractiveBackground'
 import { useAuth } from '@/hooks/useAuth'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +41,8 @@ export default function UploadPage() {
       router.push('/login')
       return
     }
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then((result: { data: { session: Session | null } }) => {
+      const session = result.data.session
       if (session?.access_token) {
         localStorage.setItem('token', session.access_token)
       }

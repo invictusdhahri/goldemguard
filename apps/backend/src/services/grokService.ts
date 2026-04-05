@@ -290,3 +290,201 @@ export async function callGrok(
     return { ok: false, reason: msg };
   }
 }
+
+// ─── Contextual verification ───────────────────────────────────────────────────
+
+export interface GrokContextualResult {
+  /** 0 = completely inconsistent, 100 = fully consistent */
+  consistency_score: number;
+  verdict: 'CONSISTENT' | 'MISLEADING' | 'UNVERIFIABLE';
+  explanation: string;
+  signals: string[];
+  sources: string[];
+  /** What the image/video actually shows — empty string if no media was provided */
+  image_description: string;
+}
+
+export type GrokContextualOutcome =
+  | { ok: true;  data: GrokContextualResult }
+  | { ok: false; reason: string };
+
+const ALLOWED_CONTEXTUAL_VERDICT = new Set(['CONSISTENT', 'MISLEADING', 'UNVERIFIABLE']);
+
+function buildContextualPrompt(context: string, hasImage: boolean): string {
+  const imageSection = hasImage
+    ? `You have been given an image/frame. First describe exactly what it shows (people, location cues, text, objects, events). Then verify the claim below against that description using your web search tool.`
+    : `No image was provided. Use your web search tool to verify the text claim below.`;
+
+  return `${imageSection}
+
+Claim being made: "${context}"
+
+Search the web to verify:
+1. Does the visual content (if any) match the claim in terms of location, date, people, and event?
+2. Are the specific details in the claim accurate according to credible news sources?
+3. Is this image/content known to have been used in a different or misleading context?
+
+Respond with ONLY valid JSON — no markdown fences, no extra text:
+{
+  "consistency_score": <integer 0-100, where 0=completely inconsistent, 100=fully consistent>,
+  "verdict": "CONSISTENT" | "MISLEADING" | "UNVERIFIABLE",
+  "explanation": "<1-2 sentences explaining why the content matches or contradicts the claim>",
+  "signals": ["<specific signal 1>", "<specific signal 2>"],
+  "sources": ["<url1>", "<url2>"],
+  "image_description": "<1-2 sentences describing what the image/video actually shows, or empty string if no image>"
+}`;
+}
+
+/**
+ * Call Grok to verify whether a piece of media matches a text claim.
+ *
+ * Pass `buffer = null` for text-only fact-checking (no image).
+ * For video, pass a single extracted JPEG frame buffer with mimeType 'image/jpeg'.
+ */
+export async function callGrokContextual(
+  buffer:   Buffer | null,
+  mimeType: string | null,
+  context:  string,
+): Promise<GrokContextualOutcome> {
+  const apiKey = process.env.XAI_API_KEY?.trim();
+  if (!apiKey) {
+    return { ok: false, reason: 'XAI_API_KEY is not set in apps/backend/.env' };
+  }
+
+  const hasImage = buffer !== null && mimeType !== null;
+  const prompt   = buildContextualPrompt(context, hasImage);
+
+  const contentBlocks: object[] = [];
+
+  if (hasImage) {
+    const base64  = buffer!.toString('base64');
+    const dataUri = `data:${mimeType};base64,${base64}`;
+    contentBlocks.push({
+      type:      'input_image',
+      image_url: dataUri,
+      detail:    'high',
+    });
+  }
+
+  contentBlocks.push({ type: 'input_text', text: prompt });
+
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), TIMEOUT);
+
+  let rawBody = '';
+
+  try {
+    const res = await fetch(XAI_URL, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        input: [
+          {
+            type:    'message',
+            role:    'user',
+            content: contentBlocks,
+          },
+        ],
+        tools:             [{ type: 'web_search' }],
+        max_output_tokens: 1_000,
+        temperature:       0,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timer);
+
+    rawBody = await res.text();
+
+    if (!res.ok) {
+      console.error(`[grokService/contextual] HTTP ${res.status} — body: ${rawBody.slice(0, 600)}`);
+      return { ok: false, reason: `xAI HTTP ${res.status}: ${rawBody.slice(0, 300)}` };
+    }
+
+    let json: XaiResponsesResponse;
+    try {
+      json = JSON.parse(rawBody) as XaiResponsesResponse;
+    } catch {
+      return { ok: false, reason: 'xAI returned non-JSON body' };
+    }
+
+    if (json.error?.message) {
+      return { ok: false, reason: `xAI error (${json.error.code ?? json.error.type}): ${json.error.message}` };
+    }
+
+    let rawText       = '';
+    const annotations: XaiAnnotation[] = [];
+
+    for (const item of json.output ?? []) {
+      if (item.type !== 'message') continue;
+      for (const block of item.content ?? []) {
+        if (block.type === 'output_text') {
+          rawText += block.text ?? '';
+          annotations.push(...(block.annotations ?? []));
+        }
+      }
+    }
+
+    if (!rawText) {
+      return { ok: false, reason: 'xAI Responses API returned no output_text content' };
+    }
+
+    console.log(`[grokService/contextual] Raw reply:`, rawText.slice(0, 800));
+
+    const parsed = parseJsonObject<Partial<GrokContextualResult>>(rawText)
+      ?? parseJsonObject<Partial<GrokContextualResult>>(rawBody);
+
+    if (!parsed) {
+      return { ok: false, reason: 'Could not parse Grok contextual JSON from reply' };
+    }
+
+    const verdict = typeof parsed.verdict === 'string'
+      ? parsed.verdict.trim().toUpperCase()
+      : '';
+
+    if (!ALLOWED_CONTEXTUAL_VERDICT.has(verdict)) {
+      return { ok: false, reason: `Invalid contextual verdict "${verdict}"` };
+    }
+
+    const scoreRaw = parsed.consistency_score;
+    const score    = typeof scoreRaw === 'number' ? scoreRaw : Number(scoreRaw);
+
+    if (!Number.isFinite(score)) {
+      return { ok: false, reason: 'Grok contextual JSON missing numeric consistency_score' };
+    }
+
+    const citationUrls = annotations
+      .filter((a) => a.type === 'url_citation' && typeof a.url === 'string')
+      .map((a) => a.url as string);
+
+    const jsonSources: string[] = Array.isArray(parsed.sources)
+      ? (parsed.sources as unknown[]).filter((s): s is string => typeof s === 'string')
+      : [];
+
+    return {
+      ok: true,
+      data: {
+        consistency_score: Math.min(100, Math.max(0, Math.round(score))),
+        verdict:           verdict as GrokContextualResult['verdict'],
+        explanation:       typeof parsed.explanation === 'string' ? parsed.explanation.trim() : '',
+        signals:           Array.isArray(parsed.signals)
+          ? (parsed.signals as unknown[]).filter((s): s is string => typeof s === 'string')
+          : [],
+        sources:           jsonSources.length > 0 ? jsonSources : citationUrls.slice(0, 5),
+        image_description: typeof parsed.image_description === 'string' ? parsed.image_description.trim() : '',
+      },
+    };
+  } catch (err) {
+    clearTimeout(timer);
+    const msg = (err as Error).message;
+    if ((err as Error).name === 'AbortError') {
+      return { ok: false, reason: `xAI contextual request timed out after ${TIMEOUT / 1000}s` };
+    }
+    console.error('[grokService/contextual] Unexpected error:', msg);
+    return { ok: false, reason: msg };
+  }
+}
