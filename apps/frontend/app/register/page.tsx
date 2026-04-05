@@ -2,37 +2,53 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { Shield, LogIn, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
-import InteractiveBackground from '../../components/InteractiveBackground'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { UserPlus, AlertCircle, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
+import InteractiveBackground from '@/components/InteractiveBackground'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setLoading(false)
+      return
+    }
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       })
 
-      if (signInError) throw signInError
+      if (signUpError) throw signUpError
 
       if (data.session) {
         localStorage.setItem('token', data.session.access_token)
         router.push('/upload')
+      } else {
+        setSuccess('Account created! Check your email to confirm, then sign in.')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed')
+      setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -62,19 +78,19 @@ export default function LoginPage() {
         <div className="glass-card rounded-2xl p-8">
           <div className="mb-8 text-center">
             <div className="mb-4 flex justify-center">
-              <Shield className="h-12 w-12 text-cyan-400" strokeWidth={1.5} />
+              <UserPlus className="h-12 w-12 text-cyan-400" strokeWidth={1.5} />
             </div>
-            <h1 className="gradient-text-cyan text-3xl font-bold">Welcome back</h1>
-            <p className="mt-2 text-slate-400">Sign in to analyze your media</p>
+            <h1 className="gradient-text-cyan text-3xl font-bold">Create account</h1>
+            <p className="mt-2 text-slate-400">Sign up to analyze media with VeritasAI</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
+              <label htmlFor="register-email" className="mb-1.5 block text-sm font-medium text-slate-300">
                 Email
               </label>
               <input
-                id="email"
+                id="register-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -85,11 +101,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
+              <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium text-slate-300">
                 Password
               </label>
               <input
-                id="password"
+                id="register-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -100,11 +116,39 @@ export default function LoginPage() {
               />
             </div>
 
+            <div>
+              <label
+                htmlFor="register-confirm"
+                className="mb-1.5 block text-sm font-medium text-slate-300"
+              >
+                Confirm password
+              </label>
+              <input
+                id="register-confirm"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                placeholder="Re-enter password"
+              />
+            </div>
+
             {error && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
                 <div className="flex items-center gap-2 text-sm text-red-400">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <p>{error}</p>
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3">
+                <div className="flex items-start gap-2 text-sm text-green-400">
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>{success}</p>
                 </div>
               </div>
             )}
@@ -119,17 +163,17 @@ export default function LoginPage() {
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <LogIn className="h-5 w-5" />
+                  <UserPlus className="h-5 w-5" />
                 )}
-                {loading ? 'Please wait...' : 'Sign in'}
+                {loading ? 'Creating account...' : 'Create account'}
               </span>
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-400">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-medium text-cyan-400 hover:text-cyan-300">
-              Create one
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-cyan-400 hover:text-cyan-300">
+              Sign in
             </Link>
           </p>
         </div>
