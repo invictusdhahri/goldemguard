@@ -25,4 +25,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Global Error Handler — returns JSON instead of default HTML
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('[server] Unhandled error:', err.stack || err.message);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
+});
+
 export { app };

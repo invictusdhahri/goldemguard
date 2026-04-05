@@ -102,6 +102,7 @@ function createWorkerRedis(): IORedis {
     ? new IORedis(redisUrl, {
         maxRetriesPerRequest: null,   // required by BullMQ
         lazyConnect:          true,
+        connectTimeout:       5000,
         enableOfflineQueue:   false,
         retryStrategy: (times) => (times >= 3 ? null : Math.min(times * 500, 2_000)),
       })
@@ -109,15 +110,17 @@ function createWorkerRedis(): IORedis {
         ...connOptions,
         maxRetriesPerRequest: null,
         lazyConnect:          true,
+        connectTimeout:       5000,
         enableOfflineQueue:   false,
         retryStrategy: (times) => (times >= 3 ? null : Math.min(times * 500, 2_000)),
       });
 
-  conn.on('error', (err: NodeJS.ErrnoException) => {
-    // Silenced after 3 retries (retryStrategy returns null); won't spam
-    if (err.code !== 'ECONNREFUSED') {
-      console.error('[worker] Redis error:', err.message);
+  conn.on('error', (err: any) => {
+    // Silence common connection-refused errors after retry-limit is reached
+    if (err.code === 'ECONNREFUSED' || err.message?.includes('Connection is closed')) {
+      return;
     }
+    console.error('[worker] Redis error:', err.message || err);
   });
 
   return conn;

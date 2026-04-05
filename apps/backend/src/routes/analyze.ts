@@ -38,12 +38,21 @@ analyzeRouter.post('/', requireAuth, async (req: AuthRequest, res) => {
     return;
   }
 
-  await analysisQueue.add('analyze', {
-    jobId: job.id,
-    fileUrl: file_url,
-    mediaType: media_type,
-    userId: req.userId,
-  });
+  try {
+    await analysisQueue.add('analyze', {
+      jobId: job.id,
+      fileUrl: file_url,
+      mediaType: media_type,
+      userId: req.userId,
+    });
+  } catch (queueError: any) {
+    console.error('[analyze] Failed to add job to queue:', queueError.message);
+    res.status(500).json({ 
+      error: 'Analysis queue is currently unavailable. Please ensure Redis is running.',
+      details: queueError.message 
+    });
+    return;
+  }
 
   res.status(201).json({ job_id: job.id, status: job.status });
 });

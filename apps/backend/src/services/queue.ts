@@ -5,6 +5,7 @@ function createRedisConnection() {
   const conn = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
     lazyConnect: true,
+    connectTimeout: 5000,
     // Give up after 3 failed attempts instead of retrying forever
     retryStrategy: (times) => (times >= 3 ? null : Math.min(times * 500, 2000)),
     enableOfflineQueue: false,
