@@ -96,7 +96,7 @@ export default function Header() {
                 color: "var(--foreground)",
               }}
             >
-              Gaulem<span style={{ color: "var(--color-purple)" }}>Guard</span>
+              Golem<span style={{ color: "var(--color-purple)" }}>Guard</span>
             </span>
           </Link>
 

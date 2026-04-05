@@ -189,7 +189,7 @@ export default function Hero() {
               className="text-lg leading-relaxed max-w-xl"
               style={{ color: "var(--muted-foreground)" }}
             >
-              GaulemGuard deploys four specialized detection models — across images, video, audio, and documents — with a self-healing fallback architecture that{" "}
+              GolemGuard deploys four specialized detection models — across images, video, audio, and documents — with a self-healing fallback architecture that{" "}
               <span style={{ color: "var(--foreground)", fontWeight: 500 }}>always delivers a verdict</span>.
             </motion.p>
 

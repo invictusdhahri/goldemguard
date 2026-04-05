@@ -62,7 +62,7 @@ export default function CTA() {
             </h2>
 
             <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: "var(--muted-foreground)" }}>
-              Join researchers, journalists, and enterprises who trust GaulemGuard to distinguish real from generated.
+              Join researchers, journalists, and enterprises who trust GolemGuard to distinguish real from generated.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

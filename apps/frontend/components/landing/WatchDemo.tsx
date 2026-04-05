@@ -22,7 +22,7 @@ export default function WatchDemo() {
               Watch Demo
             </h2>
             <p className="mt-3 text-base max-w-lg mx-auto" style={{ color: "var(--muted-foreground)" }}>
-              See GaulemGuard in action.
+              See GolemGuard in action.
             </p>
           </div>
 

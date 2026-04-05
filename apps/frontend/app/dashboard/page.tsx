@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Upload, MessageSquare, Clock, FlaskConical } from 'lucide-react'
+import { Upload, MessageSquare, Clock, FlaskConical, ArrowLeft } from 'lucide-react'
 
 const ACTIONS = [
   {
@@ -39,9 +39,20 @@ const ACTIONS = [
 export default function DashboardPage() {
   return (
     <main
-      className="flex min-h-screen flex-col items-center justify-center gap-8 px-4"
+      className="flex min-h-screen flex-col items-center gap-8 px-4 py-8"
       style={{ background: 'var(--background)' }}
     >
+      <div className="w-full max-w-4xl flex justify-start">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <ArrowLeft size={16} aria-hidden />
+          Back to home
+        </Link>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 w-full">
       <div className="text-center">
         <h1
           className="text-3xl font-bold"
@@ -76,6 +87,7 @@ export default function DashboardPage() {
             </div>
           </Link>
         ))}
+      </div>
       </div>
     </main>
   )

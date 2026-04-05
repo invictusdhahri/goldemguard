@@ -6,6 +6,8 @@ This folder holds project documentation beyond the root [README.md](../README.md
 
 | Document | Description |
 |----------|-------------|
+| [FEATURES.md](FEATURES.md) | **Judge-facing** overview of every major product feature (auth, upload, pipelines, contextual chat API, extension, UI, ops) |
+| [GOLEM_GUARD.md](GOLEM_GUARD.md) | **Why GolemGuard is unique** — differentiation: ensemble design, three-axis context, video logic, explainability, extension, production hygiene |
 | [TESTING.md](TESTING.md) | Local ML service (`uvicorn`, `curl`, `/health`, image upload), optional full-stack flow, troubleshooting |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Deploying frontend (Vercel), backend (Railway), ML service (HuggingFace Spaces), Supabase setup, env vars, troubleshooting |
 

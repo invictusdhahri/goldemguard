@@ -64,7 +64,7 @@ export default function Footer() {
                   className="text-[16px] font-bold tracking-tight"
                   style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
                 >
-                  Gaulem<span style={{ color: "var(--color-purple)" }}>Guard</span>
+                  Golem<span style={{ color: "var(--color-purple)" }}>Guard</span>
                 </span>
               </Link>
 
@@ -139,7 +139,7 @@ export default function Footer() {
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <p className="text-xs" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
-            © {new Date().getFullYear()} GaulemGuard. All rights reserved.
+            © {new Date().getFullYear()} GolemGuard. All rights reserved.
           </p>
           <p className="text-xs" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
             Built for truth. Powered by AI.

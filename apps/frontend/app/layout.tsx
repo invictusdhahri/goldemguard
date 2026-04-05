@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'GaulemGuard — Detect. Explain. Trust.',
+  title: 'GolemGuard — Detect. Explain. Trust.',
   description:
     'Multimodal AI-generated content detection platform. Detect AI-generated images, video, audio, and documents with 94.4% accuracy.',
 };

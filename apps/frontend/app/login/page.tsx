@@ -111,7 +111,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
-            <span className="gradient-text-cyan">Gaulem</span>
+            <span className="gradient-text-cyan">Golem</span>
             <span className="text-foreground">Guard</span>
           </h1>
           <p className="text-muted-foreground mt-1.5 text-sm">

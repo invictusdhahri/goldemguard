@@ -8,6 +8,15 @@ const monorepoRoot = path.join(frontendDir, "..", "..");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+    ],
+  },
   turbopack: {
     // pnpm workspace: Turbopack must resolve `next` from the repo root, not `app/` (see Next 16 monorepo note).
     root: monorepoRoot,

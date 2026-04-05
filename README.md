@@ -171,7 +171,7 @@ clawy/
 | `pnpm format` | Format all files with Prettier |
 | `pnpm format:check` | Check formatting without writing |
 
-More guides: [docs/TESTING.md](docs/TESTING.md) (local ML and full-stack checks), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+More guides: [docs/FEATURES.md](docs/FEATURES.md) (feature overview for judges), [docs/GOLEM_GUARD.md](docs/GOLEM_GUARD.md) (what makes GolemGuard unique), [docs/TESTING.md](docs/TESTING.md) (local ML and full-stack checks), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

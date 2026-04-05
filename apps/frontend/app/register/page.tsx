@@ -69,7 +69,7 @@ export default function RegisterPage() {
               <UserPlus className="h-12 w-12 text-cyan" strokeWidth={1.5} />
             </div>
             <h1 className="gradient-text-cyan text-3xl font-bold">Create account</h1>
-            <p className="mt-2 text-muted-foreground">Sign up to analyze media with GaulemGuard</p>
+            <p className="mt-2 text-muted-foreground">Sign up to analyze media with GolemGuard</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
