@@ -24,6 +24,8 @@ import {
 import { useJobStatus, useResult } from '@/hooks/useAnalysis';
 import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
 import { useAuth } from '@/hooks/useAuth';
+import { Progress } from '@/components/ui/progress';
+import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Aligns with backend `SE_AI_SCORE_THRESHOLD`: strong SightEngine AI-likeness → AI headline. */
@@ -149,6 +151,17 @@ export default function ResultPage() {
     if (!authLoading && !user) router.push('/login');
   }, [user, authLoading, router]);
 
+  const failed = job?.status === 'failed';
+  const processing = !job || job.status === 'pending' || job.status === 'processing';
+  const loadingAnalysis =
+    !!jobId &&
+    !failed &&
+    !statusError &&
+    (statusLoading || processing || (resultEnabled && resultLoading));
+
+  const [jobProgress] = useFakeAnalysisProgress(loadingAnalysis);
+  const funLoadingMessage = useRotatingLoadingMessage(loadingAnalysis);
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -165,8 +178,12 @@ export default function ResultPage() {
     );
   }
 
-  const failed    = job?.status === 'failed';
-  const processing = !job || job.status === 'pending' || job.status === 'processing';
+  const statusHeadline =
+    !job || job.status === 'pending'
+      ? 'Waiting in queue…'
+      : job.status === 'processing'
+        ? 'Analyzing your file…'
+        : 'Loading your result…';
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -186,13 +203,18 @@ export default function ResultPage() {
           <p className="text-muted-foreground text-sm mt-2 font-mono truncate px-2">Job {jobId}</p>
         </div>
 
-        {/* ── Loading / queued ── */}
-        {(statusLoading || processing) && (
-          <div className="liquid-glass-card rounded-2xl p-12 flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-cyan animate-spin" />
-            <p className="text-lg text-foreground">
-              {job?.status === 'processing' ? 'Analyzing your file…' : 'Waiting in queue…'}
-            </p>
+        {/* ── Job queued / analyzing / fetching result ── */}
+        {loadingAnalysis && (
+          <div className="liquid-glass-card rounded-2xl p-12 flex flex-col items-center gap-6 w-full">
+            <Loader2 className="w-12 h-12 text-cyan animate-spin shrink-0" aria-hidden />
+            <div className="w-full max-w-md space-y-3">
+              <div className="flex items-start justify-between gap-3 text-sm">
+                <span className="font-semibold text-foreground leading-snug">{statusHeadline}</span>
+                <span className="text-cyan font-mono tabular-nums shrink-0">{jobProgress}%</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug font-mono">{funLoadingMessage}</p>
+              <Progress value={jobProgress} variant="gradient" className="h-2" />
+            </div>
             <p className="text-sm text-muted-foreground">This usually takes a few seconds</p>
           </div>
         )}
@@ -217,13 +239,6 @@ export default function ResultPage() {
             <p className="text-muted-foreground">
               Something went wrong while processing this job. Try uploading again.
             </p>
-          </div>
-        )}
-
-        {/* ── Result loading ── */}
-        {resultEnabled && resultLoading && (
-          <div className="liquid-glass-card rounded-2xl p-12 flex justify-center">
-            <Loader2 className="w-10 h-10 text-cyan animate-spin" />
           </div>
         )}
 

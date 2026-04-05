@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { normalizeApiBase, readJsonBody } from '@/lib/readApiResponse'
+import { useRotatingLoadingMessage } from '@/lib/loadingFun'
 
 const SUPPORTED_TYPES = [
   { label: 'Images', ext: 'JPG, PNG, WebP', icon: ImageIcon, color: '#00d4ff' },
@@ -72,12 +73,14 @@ function inferMediaCategory(file: File): MediaCategory {
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const funLoadingMessage = useRotatingLoadingMessage(uploading)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -91,6 +94,18 @@ export default function UploadPage() {
       }
     })
   }, [user, authLoading, router])
+
+  useEffect(() => {
+    if (!file || inferMediaCategory(file) !== 'image') {
+      setImagePreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setImagePreviewUrl(url)
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [file])
 
   if (authLoading || !user) {
     return (
@@ -275,12 +290,18 @@ export default function UploadPage() {
 
         {/* Upload progress */}
         {uploading && (
-          <div className="mb-6 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Uploading and analyzing...</span>
-              <span className="text-cyan font-mono">{uploadProgress}%</span>
+          <div className="mb-6 rounded-xl border border-border bg-secondary/40 px-4 py-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-5 h-5 text-cyan animate-spin shrink-0 mt-0.5" aria-hidden />
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-semibold text-foreground">Uploading &amp; analyzing</span>
+                  <span className="text-cyan font-mono tabular-nums shrink-0">{uploadProgress}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug font-mono">{funLoadingMessage}</p>
+              </div>
             </div>
-            <Progress value={uploadProgress} variant="gradient" />
+            <Progress value={uploadProgress} variant="gradient" className="h-2" />
           </div>
         )}
 
@@ -317,9 +338,22 @@ export default function UploadPage() {
               {file ? (
                 <div className="relative z-10 space-y-4">
                   <div className="flex justify-center">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}>
-                      <FileIcon className="w-10 h-10 text-cyan" strokeWidth={1.5} />
-                    </div>
+                    {imagePreviewUrl ? (
+                      <div
+                        className="w-full max-w-md max-h-64 rounded-2xl overflow-hidden flex items-center justify-center bg-black/[0.04]"
+                        style={{ border: '1px solid rgba(0,212,255,0.2)' }}
+                      >
+                        <img
+                          src={imagePreviewUrl}
+                          alt={file.name}
+                          className="max-h-64 w-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}>
+                        <FileIcon className="w-10 h-10 text-cyan" strokeWidth={1.5} />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <p className="text-xl font-bold text-foreground truncate max-w-xs mx-auto">{file.name}</p>
@@ -401,15 +435,6 @@ export default function UploadPage() {
             <p className="text-xs text-muted-foreground">
               Analyzed using multi-model AI detection — results in seconds
             </p>
-          </div>
-        )}
-
-        {uploading && (
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-secondary/50 border border-border">
-              <Loader2 className="w-5 h-5 text-cyan animate-spin" />
-              <span className="font-semibold text-foreground">Analyzing your file...</span>
-            </div>
           </div>
         )}
 

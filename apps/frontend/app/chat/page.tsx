@@ -26,6 +26,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -239,6 +241,9 @@ export default function ChatPage() {
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null)
   const fileInputRef                = useRef<HTMLInputElement>(null)
 
+  const [analyzeProgress, setAnalyzeProgress] = useFakeAnalysisProgress(analyzing)
+  const funLoadingMessage = useRotatingLoadingMessage(analyzing)
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -337,6 +342,8 @@ export default function ChatPage() {
 
       const data: AnalysisResponse = await res.json()
       setResult(data)
+      setAnalyzeProgress(100)
+      await new Promise((r) => setTimeout(r, 420))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed')
     } finally {
@@ -541,6 +548,22 @@ export default function ChatPage() {
             </div>
           </CardContent>
         </Card>
+
+        {analyzing && (
+          <div className="mb-6 rounded-xl border border-border bg-secondary/40 px-4 py-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-5 h-5 text-cyan animate-spin shrink-0 mt-0.5" aria-hidden />
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-semibold text-foreground">Fact-checking in progress</span>
+                  <span className="text-cyan font-mono tabular-nums shrink-0">{analyzeProgress}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-snug font-mono">{funLoadingMessage}</p>
+              </div>
+            </div>
+            <Progress value={analyzeProgress} variant="gradient" className="h-2" />
+          </div>
+        )}
 
         {/* ── Results ── */}
         {result && overall && (
