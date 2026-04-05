@@ -6,6 +6,14 @@ Multimodal AI-generated content detection platform. Upload images, videos, audio
 
 Built for the **Menacraft 2025** hackathon — Content Authenticity track.
 
+| | |
+|:---|:---|
+| **Version** | 0.1.0 |
+| **License** | [MIT](LICENSE) |
+| **Tools** | **Monorepo & runtime:** pnpm workspaces, Turborepo, Node.js ≥20 · **Quality:** TypeScript, ESLint, Prettier · **Frontend:** Next.js 16, Tailwind CSS v4, shadcn/ui, TanStack React Query · **Backend:** Express 5, BullMQ, Redis (ioredis), Supabase JS · **Extension:** Vite, `@crxjs/vite-plugin`, React 19 · **Detection APIs:** SightEngine, xAI Grok, Anthropic Claude Haiku, Resemble AI, Sapling AI |
+
+See [Tech stack](#tech-stack) for a layer-by-layer breakdown.
+
 ---
 
 ## Architecture
@@ -194,4 +202,6 @@ Hosting can often start on **free tiers** (e.g. Supabase, Vercel, Render) depend
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Amen Dhahri.
