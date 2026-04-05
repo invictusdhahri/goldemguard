@@ -77,7 +77,7 @@ export default function Header() {
             Documentation
           </Link>
           <Link
-            href="/dashboard"
+            href="/login"
             className="btn-primary text-sm"
             style={{ padding: "8px 18px", fontSize: "14px" }}
           >
@@ -122,7 +122,7 @@ export default function Header() {
             <Link href="/docs" className="btn-ghost text-center text-sm" style={{ padding: "10px", fontSize: "14px" }} onClick={() => setMenuOpen(false)}>
               Documentation
             </Link>
-            <Link href="/dashboard" className="btn-primary justify-center text-sm" style={{ padding: "10px", fontSize: "14px" }}>
+            <Link href="/login" className="btn-primary justify-center text-sm" style={{ padding: "10px", fontSize: "14px" }}>
               Launch App <ChevronRight size={14} />
             </Link>
           </div>
