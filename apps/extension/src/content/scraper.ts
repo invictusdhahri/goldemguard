@@ -46,7 +46,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       const items = scrape();
       sendResponse({ type: 'SCRAPE_RESULT', items });
     } catch (err) {
-      console.error('[VeritasAI scraper]', err);
+      console.error('[GolemGuard scraper]', err);
       sendResponse({ type: 'SCRAPE_RESULT', items: [] });
     }
     return true; // keep channel open for async sendResponse

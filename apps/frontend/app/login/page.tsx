@@ -75,7 +75,7 @@ export default function LoginPage() {
         (err instanceof TypeError && msg.toLowerCase().includes('fetch'))
       if (isNetwork) {
         setError(
-          `Cannot reach the API at ${apiBase}. Start the backend (port 4000: run "pnpm dev" from the repo root or start @veritas/backend), then retry. If the API runs elsewhere, set NEXT_PUBLIC_API_URL in apps/frontend/.env.local and restart the dev server.`,
+          `Cannot reach the API at ${apiBase}. Start the backend (port 4000: run "pnpm dev" from the repo root), then retry. If the API runs elsewhere, set NEXT_PUBLIC_API_URL in apps/frontend/.env.local and restart the dev server.`,
         )
       } else {
         setError(msg || 'Something went wrong')

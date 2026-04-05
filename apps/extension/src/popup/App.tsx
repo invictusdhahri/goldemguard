@@ -59,7 +59,7 @@ export default function App() {
             className="text-sm font-bold gradient-text-cyan"
             style={{ fontFamily: '"Space Grotesk", sans-serif' }}
           >
-            VeritasAI
+            GolemGuard
           </span>
         </div>
 

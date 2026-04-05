@@ -1,4 +1,4 @@
-# VeritasAI
+# GolemGuard
 
 **Detect. Explain. Trust.**
 
@@ -12,29 +12,29 @@ Built for the **Menacraft 2025** hackathon — Content Authenticity track.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         VeritasAI Monorepo                      │
+│                         GolemGuard Monorepo                     │
 │                                                                 │
 │  apps/                                                          │
 │  ├── frontend/          Next.js 16 + Tailwind + shadcn/ui       │
-│  └── backend/           Express 5 + BullMQ + Supabase           │
+│  ├── backend/           Express 5 + BullMQ + Supabase           │
+│  └── extension/         Chrome extension (Vite + CRX)           │
 │                                                                 │
 │  packages/                                                      │
 │  ├── shared/            Shared TypeScript types & constants      │
 │  └── tsconfig/          Shared TS compiler presets               │
-│                                                                 │
-│  services/                                                      │
-│  └── ml/                Python FastAPI ML inference service      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Data Flow
+
+Analysis runs entirely in the **Node backend**: the BullMQ worker calls third-party APIs per modality and fuses results (no separate ML microservice).
 
 ```
 User uploads file
       │
       ▼
 ┌──────────┐     POST /api/upload      ┌──────────┐
-│ Frontend │ ──────────────────────────▶│ Backend  │
+│ Frontend │ ─────────────────────────▶│ Backend  │
 │ (Next.js)│◀────── poll GET /status ───│(Express) │
 └──────────┘                           └────┬─────┘
                                             │ BullMQ job
@@ -42,32 +42,34 @@ User uploads file
                                       ┌──────────┐
                                       │  Redis   │
                                       └────┬─────┘
-                                            │ Worker picks up job
+                                            │ Worker (same process)
                                             ▼
+                              ┌─────────────────────────────┐
+                              │ Third-party APIs (per type) │
+                              │ SightEngine · xAI Grok ·    │
+                              │ Anthropic Claude · Resemble │
+                              │ · Sapling                   │
+                              └──────────────┬──────────────┘
+                                             │ Fused scores → verdict
+                                             ▼
                                       ┌──────────┐
-                                      │ML Service│
-                                      │(FastAPI) │
-                                      └────┬─────┘
-                                            │ Fallback chain per modality
-                                            ▼
-                                      ┌──────────┐
-                                      │  Claude  │  Fused scores → verdict
-                                      │Haiku 4.5 │
+                                      │ Supabase │
+                                      │ (results)│
                                       └──────────┘
 ```
 
 ### Detection Pipelines
 
-The **backend worker** (`apps/backend`) calls third-party APIs per modality and fuses results (see `docs/FEATURES.md`). The optional Python app under `services/ml` is for experiments and is not required for production uploads.
+The **backend worker** (`apps/backend/src/jobs/analyzeJob.ts`) orchestrates these integrations. Missing API keys or failed calls are **skipped with a recorded reason**—the job still completes with whatever signals succeeded.
 
 | Modality | Integrations | Role |
 |----------|--------------|------|
-| Image | SightEngine, xAI Grok, Anthropic Claude Haiku | Generative-AI scores, vision reasoning, synthesis |
-| Video | Resemble (audio), SightEngine (video or key frame), Grok, Claude | Audio-first short-circuit; temporal / frame evidence |
-| Audio | Resemble AI | Deepfake / synthetic-speech detection |
-| Document | Sapling AI | AI-likeness after PDF/DOCX text extraction |
+| **Image** | SightEngine (generative-AI scores), xAI Grok (vision assessment), Anthropic Claude Haiku (independent rate + synthesis) | Parallel SE ∥ Grok, then Claude for reasoning and fused verdict |
+| **Video** | Resemble AI (audio deepfake from extracted audio), SightEngine (video API or key-frame image), Grok, Claude | Audio-first short-circuit if AI; else visual pipeline with frame evidence |
+| **Audio** | Resemble AI | Deepfake / synthetic-speech detection |
+| **Document** | Sapling AI | AI-likeness on text extracted from PDF/DOCX (via `pdf-parse`, `mammoth`) |
 
-Missing API keys or failed calls are **skipped with a recorded reason**—the job still completes with whatever signals succeeded.
+**Infrastructure:** [Supabase](https://supabase.com) (PostgreSQL, Storage, Auth, RLS), [Redis](https://redis.io) (BullMQ queue). **Deployment:** frontend on Vercel, API + worker on Render — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
@@ -75,11 +77,11 @@ Missing API keys or failed calls are **skipped with a recorded reason**—the jo
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 16, TypeScript, Tailwind CSS v4, shadcn/ui, React Query |
-| Backend | Express 5, TypeScript, BullMQ, Redis, Supabase JS |
-| ML Service | Python FastAPI, PyTorch, HuggingFace Transformers |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack React Query |
+| Backend | Express 5, TypeScript, BullMQ, Redis (ioredis), Supabase JS |
+| Extension | Vite, `@crxjs/vite-plugin`, React 19 |
 | Database | Supabase (PostgreSQL + Storage + Auth + RLS) |
-| AI Reasoning | Claude Haiku 4.5 (verdict engine) |
+| AI / detection APIs | SightEngine, xAI Grok, Anthropic Claude Haiku, Resemble AI, Sapling AI |
 | Monorepo | pnpm workspaces + Turborepo |
 
 ---
@@ -88,7 +90,6 @@ Missing API keys or failed calls are **skipped with a recorded reason**—the jo
 
 - **Node.js** >= 20
 - **pnpm** >= 10
-- **Python** >= 3.11 (for ML service)
 - **Redis** (for BullMQ job queue)
 - **Supabase** project (database, storage, auth)
 
@@ -105,23 +106,14 @@ pnpm install
 # 2. Set up environment variables (each app loads its own file)
 cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env.local
-# Fill in Supabase keys, Redis URL, JWT secret, etc.
+# Fill in Supabase keys, Redis URL, JWT secret, and optional third-party API keys
+# (see apps/backend/.env.example for SightEngine, xAI, Anthropic, Resemble, Sapling)
 
-# 3. Run all services in development
+# 3. Run all workspace apps in development
 pnpm dev
 ```
 
-This starts the frontend on `http://localhost:3001` and the backend on `http://localhost:4000`.
-
-For the ML service:
-
-```bash
-cd services/ml
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000 --reload-dir app
-```
+This starts the frontend on `http://localhost:3001`, the backend on `http://localhost:4000`, and the extension build in watch mode (see `apps/extension`).
 
 ---
 
@@ -136,25 +128,18 @@ clawy/
 │   │   ├── hooks/                # Custom hooks (useAuth, useAnalysis)
 │   │   └── lib/                  # Utilities (api client, supabase, cn)
 │   │
-│   └── backend/                  # Express.js API server
-│       └── src/
-│           ├── routes/           # Auth, upload, analyze, results, history
-│           ├── middleware/       # JWT auth, rate limiting, file upload
-│           ├── services/         # Supabase, BullMQ queue, ML client, Claude
-│           └── jobs/             # Background job workers
+│   ├── backend/                  # Express.js API + BullMQ worker
+│   │   └── src/
+│   │       ├── routes/           # Auth, upload, analyze, results, history
+│   │       ├── middleware/       # JWT auth, rate limiting, file upload
+│   │       ├── services/         # Supabase, queue, SightEngine, Grok, Claude, Resemble, Sapling
+│   │       └── jobs/             # analyzeJob — multimodal detection orchestration
+│   │
+│   └── extension/                # Chrome extension (Vite)
 │
 ├── packages/
 │   ├── shared/                   # @veritas/shared — types & constants
 │   └── tsconfig/                 # @veritas/tsconfig — TS compiler presets
-│
-├── services/
-│   └── ml/                       # Python FastAPI ML service
-│       └── app/
-│           ├── routers/          # Per-modality endpoints
-│           ├── detectors/        # Model inference + fallback chains
-│           ├── fallback/         # Fallback executor, timeout, logging
-│           ├── fusion.py         # Weighted score fusion
-│           └── claude_service.py # Claude verdict engine
 │
 ├── package.json                  # Root workspace config
 ├── pnpm-workspace.yaml           # Workspace declarations
@@ -173,7 +158,7 @@ clawy/
 | `pnpm format` | Format all files with Prettier |
 | `pnpm format:check` | Check formatting without writing |
 
-More guides: [docs/FEATURES.md](docs/FEATURES.md) (feature overview for judges), [docs/GOLEM_GUARD.md](docs/GOLEM_GUARD.md) (what makes GolemGuard unique), [docs/TESTING.md](docs/TESTING.md) (local ML and full-stack checks), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+More guides: [docs/FEATURES.md](docs/FEATURES.md) (feature overview for judges), [docs/GOLEM_GUARD.md](docs/GOLEM_GUARD.md) (what makes GolemGuard unique), [docs/TESTING.md](docs/TESTING.md) (local checks), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
@@ -203,14 +188,7 @@ Three tables in Supabase PostgreSQL with Row Level Security:
 
 ## Cost
 
-| Component | Cost |
-|-----------|------|
-| All ML models | $0 (open-source) |
-| Claude Haiku 4.5 | $0 ($5 free credits) |
-| HuggingFace Spaces | $0 (free tier) |
-| Supabase | $0 (free tier) |
-| Vercel | $0 (free tier) |
-| **Total** | **$0** |
+Hosting can often start on **free tiers** (e.g. Supabase, Vercel, Render) depending on usage. **Detection** uses third-party APIs (SightEngine, xAI, Anthropic, Resemble, Sapling)—cost follows each provider’s pricing and your call volume, not “$0 models” in aggregate.
 
 ---
 

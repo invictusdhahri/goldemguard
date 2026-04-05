@@ -1,5 +1,5 @@
 /**
- * Service worker (background script) for the VeritasAI extension.
+ * Service worker (background script) for the GolemGuard extension.
  *
  * Responsibilities:
  *  - Persist auth token in chrome.storage.local
@@ -23,7 +23,7 @@ import type {
 const BUILT_IN_API_BASE =
   typeof import.meta.env.VITE_API_BASE === 'string' && import.meta.env.VITE_API_BASE.trim() !== ''
     ? import.meta.env.VITE_API_BASE.trim()
-    : 'https://api.veritasai.com/api';
+    : 'https://clawy-api.onrender.com/api';
 
 async function getApiBase(): Promise<string> {
   return new Promise((resolve) => {
@@ -39,7 +39,7 @@ const BUILT_IN_WEB_APP_ORIGINS =
   typeof import.meta.env.VITE_WEB_APP_ORIGINS === 'string' &&
   import.meta.env.VITE_WEB_APP_ORIGINS.trim() !== ''
     ? import.meta.env.VITE_WEB_APP_ORIGINS.trim()
-    : 'http://localhost:3000,http://127.0.0.1:3000,https://veritasai.com,https://www.veritasai.com';
+    : 'http://localhost:3000,http://127.0.0.1:3000,https://goldemguard.vercel.app,https://www.goldemguard.vercel.app';
 
 function getWebAppOrigins(): string[] {
   return BUILT_IN_WEB_APP_ORIGINS.split(',')

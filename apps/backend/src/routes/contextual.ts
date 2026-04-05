@@ -176,7 +176,7 @@ contextualRouter.post('/url', requireAuth, async (req: AuthRequest, res) => {
       const timer = setTimeout(() => controller.abort(), 20_000);
 
       const fetchRes = await fetch(mediaUrl, {
-        headers: { 'User-Agent': 'VeritasAI/1.0' },
+        headers: { 'User-Agent': 'GolemGuard/1.0' },
         signal:  controller.signal,
       });
       clearTimeout(timer);

@@ -1,4 +1,4 @@
-# VeritasAI documentation
+# GolemGuard documentation
 
 This folder holds project documentation beyond the root [README.md](../README.md).
 

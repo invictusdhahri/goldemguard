@@ -1,4 +1,4 @@
-// Shared types for the VeritasAI extension
+// Shared types for the GolemGuard extension
 
 // ─── Scraped content from the active page ─────────────────────────────────────
 

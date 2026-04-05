@@ -33,7 +33,7 @@ export function Login({ onLogin, loading, error }: Props) {
           <Scan size={20} style={{ color: '#00d4ff' }} />
         </div>
         <p className="text-lg font-bold gradient-text-cyan" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
-          VeritasAI
+          GolemGuard
         </p>
         <p className="text-xs text-center max-w-[280px] leading-relaxed" style={{ color: '#64748b' }}>
           Sign in to analyze the current tab — works on Twitter/X, Facebook, and any site.
@@ -109,7 +109,7 @@ export function Login({ onLogin, loading, error }: Props) {
       <p className="text-[10px] text-center" style={{ color: '#475569' }}>
         Don&apos;t have an account?{' '}
         <a
-          href="https://veritasai.com/register"
+          href="https://goldemguard.vercel.app/register"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: '#00d4ff' }}

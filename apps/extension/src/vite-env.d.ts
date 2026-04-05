@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
-  /** Comma-separated origins where the VeritasAI web app runs (localStorage session sync). */
+  /** Comma-separated origins where the GolemGuard web app runs (localStorage session sync). */
   readonly VITE_WEB_APP_ORIGINS?: string;
 }
 

@@ -1,4 +1,4 @@
-# VeritasAI — Testing Guide
+# GolemGuard — Testing Guide
 
 How to run and verify the **ML service** locally, and (optionally) the **full stack** (frontend + backend + Redis + ML).
 
@@ -58,7 +58,7 @@ Start the API with the `uvicorn` command in the block above and keep that termin
 curl -sS http://localhost:8000/health
 ```
 
-Expect JSON with `"status": "ok"` and `"service": "veritas-ml"`.
+Expect JSON with `"status": "ok"` and `"service": "golemguard-ml"`.
 
 **OpenAPI**
 

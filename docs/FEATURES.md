@@ -1,6 +1,6 @@
-# VeritasAI — Feature documentation (for judges)
+# GolemGuard — Feature documentation (for judges)
 
-This document describes **what we built** in the VeritasAI monorepo: user-facing flows, backend capabilities, and how detection pipelines fit together. It complements the root [README.md](../README.md), [TESTING.md](TESTING.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
+This document describes **what we built** in the GolemGuard monorepo: user-facing flows, backend capabilities, and how detection pipelines fit together. It complements the root [README.md](../README.md), [TESTING.md](TESTING.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 **Product positioning:** multimodal AI-generated content detection — upload media or verify claims in context, with plain-English verdicts backed by multiple models and traceable signals.
 

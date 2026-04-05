@@ -49,7 +49,7 @@ function wrapFfmpegError(err: Error): Error {
 }
 
 async function writeTempFile(buffer: Buffer, ext: string): Promise<string> {
-  const p = path.join(os.tmpdir(), `veritas_${randomUUID()}${ext}`);
+  const p = path.join(os.tmpdir(), `golemguard_${randomUUID()}${ext}`);
   await fs.writeFile(p, buffer);
   return p;
 }
@@ -94,7 +94,7 @@ export async function extractAudioSegment(
   durationSec: number,
 ): Promise<Buffer> {
   const inputPath  = await writeTempFile(buffer, '.mp4');
-  const outputPath = path.join(os.tmpdir(), `veritas_audio_${randomUUID()}.wav`);
+  const outputPath = path.join(os.tmpdir(), `golemguard_audio_${randomUUID()}.wav`);
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -133,7 +133,7 @@ export async function extractKeyFrames(
   duration?: number,
 ): Promise<Buffer[]> {
   const inputPath = await writeTempFile(buffer, '.mp4');
-  const outDir    = path.join(os.tmpdir(), `veritas_frames_${randomUUID()}`);
+  const outDir    = path.join(os.tmpdir(), `golemguard_frames_${randomUUID()}`);
 
   try {
     await fs.mkdir(outDir, { recursive: true });

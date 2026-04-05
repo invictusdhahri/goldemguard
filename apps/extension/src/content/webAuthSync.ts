@@ -1,5 +1,5 @@
 /**
- * Runs on VeritasAI web app origins. Syncs localStorage `token` / `user` from the
+ * Runs on GolemGuard web app origins. Syncs localStorage `token` / `user` from the
  * site into the extension when the user is already signed in in the browser.
  */
 

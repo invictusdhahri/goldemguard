@@ -7,7 +7,7 @@ import './jobs/analyzeJob';
 const PORT = process.env.PORT ?? 4000;
 
 app.listen(PORT, () => {
-  console.log(`VeritasAI API running on port ${PORT}`);
+  console.log(`GolemGuard API running on port ${PORT}`);
 });
 
 // Process-level safety net — prevents background crashes from killing the server

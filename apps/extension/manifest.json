@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "VeritasAI",
+  "name": "GolemGuard",
   "version": "0.1.0",
-  "description": "Detect AI-generated media and verify claims everywhere — Twitter/X (especially), Facebook, and any website. Powered by VeritasAI.",
+  "description": "Detect AI-generated media and verify claims everywhere — Twitter/X (especially), Facebook, and any website. Powered by GolemGuard.",
   "permissions": ["activeTab", "storage", "scripting", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "VeritasAI — X/Twitter, Facebook & any site",
+    "default_title": "GolemGuard — X/Twitter, Facebook & any site",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -32,8 +32,8 @@
       "matches": [
         "http://localhost:3000/*",
         "http://127.0.0.1:3000/*",
-        "https://veritasai.com/*",
-        "https://www.veritasai.com/*"
+        "https://goldemguard.vercel.app/*",
+        "https://www.goldemguard.vercel.app/*"
       ],
       "js": ["src/content/webAuthSync.ts"],
       "run_at": "document_idle"

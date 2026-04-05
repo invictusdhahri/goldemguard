@@ -1,7 +1,7 @@
 import '../loadEnv';
 
 /**
- * analyzeJob.ts — Production BullMQ worker for VeritasAI analysis pipeline
+ * analyzeJob.ts — Production BullMQ worker for GolemGuard analysis pipeline
  *
  * Flow per job:
  *   1. Mark job "processing" in DB

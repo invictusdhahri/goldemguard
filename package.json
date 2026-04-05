@@ -1,5 +1,5 @@
 {
-  "name": "veritasai",
+  "name": "golemguard",
   "private": true,
   "scripts": {
     "dev": "turbo dev",

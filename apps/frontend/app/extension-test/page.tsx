@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, FlaskConical, ImageIcon, Video, FileText, ExternalLink } from 'lucide-react'
 export const metadata: Metadata = {
-  title: 'Extension test feed — VeritasAI',
+  title: 'Extension test feed — GolemGuard',
   description:
-    'Sample articles, images, videos, and document links for testing the VeritasAI browser extension scraper.',
+    'Sample articles, images, videos, and document links for testing the GolemGuard browser extension scraper.',
 }
 
 /** Stable remote images (picsum ids do not change). */
@@ -101,7 +101,7 @@ export default function ExtensionTestPage() {
             Dense page of <strong className="text-foreground/90">articles</strong>,{' '}
             <strong className="text-foreground/90">images</strong>,{' '}
             <strong className="text-foreground/90">videos</strong>, and{' '}
-            <strong className="text-foreground/90">document links</strong> so you can open the VeritasAI
+            <strong className="text-foreground/90">document links</strong> so you can open the GolemGuard
             extension, scan this tab, and tap <span className="text-cyan">Reveal</span> on each block.
             Media URLs are public HTTPS samples (picsum, MDN, Google sample bucket).
           </p>
@@ -225,7 +225,7 @@ export default function ExtensionTestPage() {
           <p>
             Open this page on{' '}
             <code className="text-cyan/90 bg-secondary px-1.5 py-0.5 rounded">http://localhost:3001/extension-test</code>{' '}
-            (or your deployed URL), then use the VeritasAI extension popup on this tab.
+            (or your deployed URL), then use the GolemGuard extension popup on this tab.
           </p>
         </footer>
       </div>

@@ -1,5 +1,5 @@
 -- ============================================================
--- VeritasAI — initial schema
+-- GolemGuard — initial schema
 -- ============================================================
 
 -- Users table (mirrors auth.users; id == auth.uid())

@@ -1,6 +1,6 @@
-# VeritasAI Deployment Guide
+# GolemGuard Deployment Guide
 
-This document covers deploying VeritasAI to **Supabase** (database and storage), **Vercel** (Next.js frontend), and **Render** (Express API + Redis-compatible queue).
+This document covers deploying GolemGuard to **Supabase** (database and storage), **Vercel** (Next.js frontend), and **Render** (Express API + Redis-compatible queue).
 
 ---
 

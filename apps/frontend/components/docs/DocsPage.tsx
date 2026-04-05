@@ -135,7 +135,7 @@ export function DocsPage() {
           </Link>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan">Documentation</p>
           <h1 className="font-[family-name:var(--font-display)] mt-3 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            VeritasAI — GolemGuard
+            GolemGuard
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
             <strong className="font-semibold text-foreground">Detect. Explain. Trust.</strong> Multimodal authenticity
@@ -379,7 +379,7 @@ export function DocsPage() {
 
             <DocsSection id="hackathon" title="Hackathon">
               <p className="text-foreground/80">
-                VeritasAI / GolemGuard was built for the <strong className="text-foreground">Menacraft 2025</strong>{' '}
+                GolemGuard was built for the <strong className="text-foreground">Menacraft 2025</strong>{' '}
                 hackathon — Content Authenticity track.
               </p>
             </DocsSection>
