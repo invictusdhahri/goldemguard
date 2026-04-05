@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+import { normalizeApiBase, readJsonBody } from './readApiResponse';
+
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL);
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token =
@@ -16,9 +18,10 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     headers,
   });
 
+  const body = await readJsonBody<T & { error?: string }>(res, path);
+
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(body?.error ?? `API error: ${res.status}`);
+    throw new Error(body.error ?? `API error: ${res.status}`);
   }
-  return res.json() as Promise<T>;
+  return body as T;
 }

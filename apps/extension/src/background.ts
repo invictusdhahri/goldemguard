@@ -66,13 +66,35 @@ async function clearStoredAuth(): Promise<void> {
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
+function networkHint(apiBase: string, original: string): string {
+  const o = original.toLowerCase();
+  if (
+    original === 'Failed to fetch' ||
+    o.includes('networkerror') ||
+    o.includes('load failed') ||
+    o.includes('network request failed')
+  ) {
+    return (
+      `Cannot reach the API at ${apiBase}. Check internet/VPN/firewall, ` +
+      'or rebuild the extension with VITE_API_BASE in apps/extension/.env pointing at …/api.'
+    );
+  }
+  return original;
+}
+
 async function login(email: string, password: string): Promise<StoredAuth> {
   const apiBase = await getApiBase();
-  const res = await fetch(`${apiBase}/auth/login`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ email, password }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/auth/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, password }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(networkHint(apiBase, msg));
+  }
 
   const text = await res.text();
   let body: Record<string, unknown>;
@@ -134,21 +156,39 @@ async function reveal(item: ScrapedItem, token: string): Promise<AnalysisRespons
   if (item.mediaUrl)  payload.media_url = item.mediaUrl;
   if (item.text)      payload.context   = item.text;
 
-  const res = await fetch(`${apiBase}/analyze/contextual/url`, {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      Authorization:   `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error((err as Record<string, string>).error ?? `HTTP ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/analyze/contextual/url`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        Authorization:   `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(networkHint(apiBase, msg));
   }
 
-  return res.json() as Promise<AnalysisResponse>;
+  const raw = await res.text();
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = raw.trim() ? (JSON.parse(raw) as Record<string, unknown>) : {};
+  } catch {
+    const snippet = raw.slice(0, 120).replace(/\s+/g, ' ');
+    throw new Error(
+      !res.ok
+        ? `Reveal failed (${res.status}): ${snippet}`
+        : `Invalid JSON from server: ${snippet}`,
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error((parsed.error as string) ?? `HTTP ${res.status}`);
+  }
+
+  return parsed as unknown as AnalysisResponse;
 }
 
 // ─── Message handler ──────────────────────────────────────────────────────────
