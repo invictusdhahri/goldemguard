@@ -26,6 +26,49 @@ const FEATURES = [
   { icon: CheckCircle, title: '94%+ Accuracy', desc: 'Multi-model ensemble' },
 ]
 
+function fileExtension(name: string): string {
+  const i = name.lastIndexOf('.')
+  return i >= 0 ? name.slice(i).toLowerCase() : ''
+}
+
+/** Same idea as backend upload filter: MIME varies (e.g. MP3 as audio/mp3 or ""). */
+const ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+  'audio/mpeg', 'audio/mp3', 'audio/x-mpeg', 'audio/wav', 'audio/wave', 'audio/x-wav', 'audio/ogg', 'audio/flac',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+])
+
+const ALLOWED_EXT = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp',
+  '.mp4', '.mov', '.avi', '.webm',
+  '.mp3', '.wav', '.ogg', '.flac',
+  '.pdf', '.doc', '.docx',
+])
+
+function isAllowedFile(file: File): boolean {
+  if (ALLOWED_MIME.has(file.type)) return true
+  if (file.type === '' || file.type === 'application/octet-stream') {
+    return ALLOWED_EXT.has(fileExtension(file.name))
+  }
+  return false
+}
+
+type MediaCategory = 'image' | 'video' | 'audio' | 'document'
+
+function inferMediaCategory(file: File): MediaCategory {
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type.startsWith('video/')) return 'video'
+  if (file.type.startsWith('audio/')) return 'audio'
+  const ext = fileExtension(file.name)
+  if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) return 'image'
+  if (['.mp4', '.mov', '.avi', '.webm'].includes(ext)) return 'video'
+  if (['.mp3', '.wav', '.ogg', '.flac'].includes(ext)) return 'audio'
+  return 'document'
+}
+
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -64,15 +107,7 @@ export default function UploadPage() {
       setError(`File too large. Maximum size is 100MB. Your file is ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`)
       return false
     }
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
-      'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac',
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-    ]
-    if (!allowedTypes.includes(selectedFile.type)) {
+    if (!isAllowedFile(selectedFile)) {
       setError('File type not supported. Please upload an image, video, audio, PDF, or Word document.')
       return false
     }
@@ -132,10 +167,7 @@ export default function UploadPage() {
 
       const uploadData = await uploadRes.json()
 
-      const mediaType = file.type.startsWith('image/') ? 'image'
-        : file.type.startsWith('video/') ? 'video'
-        : file.type.startsWith('audio/') ? 'audio'
-        : 'document'
+      const mediaType = inferMediaCategory(file)
 
       const analyzeRes = await fetch(`${apiBase}/analyze`, {
         method: 'POST',
@@ -168,18 +200,26 @@ export default function UploadPage() {
 
   const getFileIcon = () => {
     if (!file) return Upload
-    if (file.type.startsWith('image/')) return ImageIcon
-    if (file.type.startsWith('video/')) return Video
-    if (file.type.startsWith('audio/')) return Music
+    const c = inferMediaCategory(file)
+    if (c === 'image') return ImageIcon
+    if (c === 'video') return Video
+    if (c === 'audio') return Music
     return FileText
   }
 
   const getMediaBadgeVariant = () => {
     if (!file) return 'muted' as const
-    if (file.type.startsWith('image/')) return 'cyan' as const
-    if (file.type.startsWith('video/')) return 'purple' as const
-    if (file.type.startsWith('audio/')) return 'verified' as const
+    const c = inferMediaCategory(file)
+    if (c === 'image') return 'cyan' as const
+    if (c === 'video') return 'purple' as const
+    if (c === 'audio') return 'verified' as const
     return 'warning' as const
+  }
+
+  const mediaBadgeLabel = () => {
+    if (!file) return ''
+    const c = inferMediaCategory(file)
+    return c
   }
 
   const FileIcon = getFileIcon()
@@ -280,7 +320,7 @@ export default function UploadPage() {
                     <p className="text-xl font-bold text-foreground truncate max-w-xs mx-auto">{file.name}</p>
                     <div className="flex items-center justify-center gap-3">
                       <Badge variant={getMediaBadgeVariant()}>
-                        {file.type.split('/')[0]}
+                        {mediaBadgeLabel()}
                       </Badge>
                       <span className={`text-sm ${file.size > 100 * 1024 * 1024 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                         {(file.size / 1024 / 1024).toFixed(2)} MB
