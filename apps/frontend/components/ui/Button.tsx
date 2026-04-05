@@ -1,12 +1,11 @@
 'use client'
 
-import { ButtonHTMLAttributes, ReactNode } from 'react'
+import { type ButtonHTMLAttributes } from 'react'
 import { Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
 }
@@ -17,6 +16,7 @@ export default function Button({
   variant = 'primary',
   disabled,
   className = '',
+  type = 'button',
   ...props 
 }: ButtonProps) {
   const baseStyles = "relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden active:scale-95"
@@ -28,16 +28,19 @@ export default function Button({
     ghost: "bg-transparent hover:bg-white/5 text-slate-400 hover:text-white border border-transparent hover:border-white/10"
   }
 
+  const isDisabled = disabled || loading
+
   return (
     <motion.button
-      whileHover={{ scale: disabled || loading ? 1 : 1.01 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
-      disabled={disabled || loading}
+      type={type}
+      whileHover={{ scale: isDisabled ? 1 : 1.01 }}
+      whileTap={{ scale: isDisabled ? 1 : 0.98 }}
+      disabled={isDisabled}
       className={cn(baseStyles, variants[variant], className)}
       {...props as any}
     >
       {/* Animated Shine Effect for Primary */}
-      {variant === 'primary' && !disabled && !loading && (
+      {variant === 'primary' && !isDisabled && (
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
       )}
       
@@ -47,7 +50,7 @@ export default function Button({
 
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-inherit opacity-100" />
+          <Loader2 className="w-5 h-5 animate-spin text-inherit opacity-100" aria-hidden />
         </div>
       )}
     </motion.button>
