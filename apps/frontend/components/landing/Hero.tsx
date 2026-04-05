@@ -310,7 +310,7 @@ export default function Hero() {
 
             {/* CTAs */}
             <div className="flex items-center gap-4 pt-2">
-              <Link href="/upload" className="btn-primary">
+              <Link href="/login" className="btn-primary">
                 Start Detecting
                 <ArrowRight size={16} />
               </Link>

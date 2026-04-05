@@ -47,7 +47,7 @@ export default function CTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/upload" className="btn-primary text-base" style={{ padding: "14px 32px", fontSize: "16px" }}>
+            <Link href="/login" className="btn-primary text-base" style={{ padding: "14px 32px", fontSize: "16px" }}>
               Get Started Free
               <ArrowRight size={18} />
             </Link>
