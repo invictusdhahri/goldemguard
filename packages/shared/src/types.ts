@@ -47,12 +47,14 @@ export interface AnalysisResult {
 
 /** Per-model outputs shown on the result page (proof + skip reasons). */
 export interface ModelEvidence {
-  sightengine: {
+  /** Present for image analyses only. */
+  sightengine?: {
     ai_likeness: number;
     verdict: Verdict;
     proof: string;
   };
-  grok:
+  /** Present for image analyses only. */
+  grok?:
     | {
         ran: true;
         assessment: 'LIKELY_AI' | 'LIKELY_REAL' | 'UNCERTAIN';
@@ -60,12 +62,27 @@ export interface ModelEvidence {
         proof: string;
       }
     | { ran: false; skip_reason: string };
-  claude:
+  /** Present for image analyses only. */
+  claude?:
     | {
         ran: true;
-        /** 0–100: Claude’s own visual AI-likeness estimate */
+        /** 0–100: Claude's own visual AI-likeness estimate */
         confidence_pct: number;
         proof_points: string[];
+      }
+    | { ran: false; skip_reason: string };
+  /** Present for audio analyses only. */
+  resemble?:
+    | {
+        ran: true;
+        /** Seconds analyzed from the start of the file (API segment). Omitted on older rows. */
+        sample_seconds?: number;
+        label: 'fake' | 'real' | 'uncertain';
+        aggregated_score: number;
+        chunk_scores: string[];
+        consistency: string;
+        source_tracing: string | null;
+        intelligence: string | null;
       }
     | { ran: false; skip_reason: string };
 }
