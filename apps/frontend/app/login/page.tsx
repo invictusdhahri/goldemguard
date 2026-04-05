@@ -30,11 +30,15 @@ export default function LoginPage() {
     setError('')
     setSuccess('')
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+    // Must match lib/api.ts / upload: base includes /api (e.g. http://localhost:4000/api)
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(
+      /\/+$/,
+      '',
+    )
+    const path = isLogin ? '/auth/login' : '/auth/register'
 
     try {
-      const response = await fetch(`${backendUrl}${endpoint}`, {
+      const response = await fetch(`${apiBase}${path}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,7 +46,17 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      const data = await response.json()
+      const raw = await response.text()
+      let data: { error?: string; session?: { access_token?: string }; user?: unknown }
+      try {
+        data = JSON.parse(raw) as typeof data
+      } catch {
+        throw new Error(
+          !response.ok
+            ? 'Server did not return JSON — check NEXT_PUBLIC_API_URL and that the backend is running.'
+            : 'Invalid response from server',
+        )
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Authentication failed')
