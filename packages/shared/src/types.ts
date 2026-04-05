@@ -12,6 +12,8 @@ export interface User {
   email: string;
   created_at: string;
   plan: Plan;
+  /** Free-tier pool; omitted in older API responses. */
+  trial_credits?: number;
 }
 
 /** Full row from DB; `/api/status/:id` may omit some fields */
@@ -19,6 +21,8 @@ export interface AnalysisJob {
   id: string;
   user_id?: string;
   file_url?: string;
+  /** SHA-256 hex of file bytes; used server-side to reuse prior results for identical uploads */
+  content_hash?: string | null;
   media_type: MediaType;
   status: JobStatus;
   created_at: string;

@@ -6,7 +6,8 @@ import '../loadEnv';
  * Flow per job:
  *   1. Mark job "processing" in DB
  *   2. Download file from Supabase storage (uploads bucket)
- *   3. Guard against oversized files (>100 MB)
+ *   3. Guard against oversized files (>100 MB); compute SHA-256 and persist to analysis_jobs.content_hash
+ *   3b. If the same user already has a completed analysis for this hash + media_type, copy results row and skip APIs
  *   4a. SightEngine + Grok in parallel (Grok assesses independently — no SE anchoring)
  *   4b. Claude Haiku (vision): independent AI-likeness rate + reasoning synthesis (optional)
  *   4c. Final verdict: SE raw score ≥ 0.5 → always AI_GENERATED; else SE threshold AI_GENERATED → AI;
@@ -24,6 +25,7 @@ import '../loadEnv';
 import { Worker, type Job, UnrecoverableError } from 'bullmq';
 import IORedis from 'ioredis';
 import { getSupabaseServiceRole, storageObjectPathFromFileUrl } from '../services/supabase';
+import { findPriorDuplicateResult, resultRowToMlResult } from '../services/analysisCache';
 import { analyzeImage, analyzeVideo, unsupportedMediaResult, type SightEngineResult } from '../services/sightengineService';
 import { analyzeAudio } from '../services/resembleService';
 import { callGrok, isValidGrokResult, type GrokResult } from '../services/grokService';
@@ -31,6 +33,7 @@ import { callClaude, callClaudeForVideo } from '../services/claudeService';
 import { analyzeSaplingText } from '../services/saplingService';
 import { extractText } from '../utils/extractText';
 import { getVideoDuration, extractAudioSegment, extractKeyFrames, FfmpegNotFoundError } from '../utils/videoUtils';
+import { sha256Hex } from '../utils/contentHash';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -184,6 +187,23 @@ async function callSightEngine(
  * Update analysis_jobs.status with a single DB-level retry on failure.
  * Using a tail-recursive flag instead of a loop keeps the call-stack clear.
  */
+async function setJobContentHash(jobId: string, contentHash: string, isRetry = false): Promise<void> {
+  const db = getSupabaseServiceRole();
+  const { error } = await db
+    .from('analysis_jobs')
+    .update({ content_hash: contentHash })
+    .eq('id', jobId);
+
+  if (error) {
+    if (!isRetry) {
+      log('warn', jobId, `content_hash update failed, retrying once: ${error.message}`);
+      await sleep(500);
+      return setJobContentHash(jobId, contentHash, true);
+    }
+    log('warn', jobId, `content_hash update failed after retry: ${error.message}`);
+  }
+}
+
 async function setJobStatus(
   jobId:   string,
   status:  'processing' | 'done' | 'failed',
@@ -267,7 +287,7 @@ async function persistResult(
 // ─── Core job processor ───────────────────────────────────────────────────────
 
 async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
-  const { jobId, fileUrl, mediaType } = job.data;
+  const { jobId, fileUrl, mediaType, userId } = job.data;
   const t0 = Date.now();
 
   log('info', jobId, `🔍 Job received — mediaType=${mediaType} file=${fileUrl} attempt=${job.attemptsMade + 1}`);
@@ -321,6 +341,29 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
     : 'image/jpeg';
 
   log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — dispatching to analysis pipeline`);
+
+  // ── Dedup: same bytes + user + media type already analyzed — reuse DB verdict (no external APIs)
+  const contentHash = sha256Hex(buffer);
+  await setJobContentHash(jobId, contentHash);
+
+  const dup = await findPriorDuplicateResult(db, userId, contentHash, mediaType, jobId);
+  if (dup) {
+    const processingMsDup = Date.now() - t0;
+    log(
+      'info',
+      jobId,
+      `⚡ Duplicate file (SHA-256 matches completed job ${dup.sourceJobId}) — reusing stored verdict, skipping APIs`,
+    );
+    try {
+      await persistResult(jobId, resultRowToMlResult(dup.result), processingMsDup);
+    } catch (err) {
+      await setJobStatus(jobId, 'failed');
+      throw err;
+    }
+    await setJobStatus(jobId, 'done');
+    log('info', jobId, `🎉 Job complete (deduplicated) — total=${processingMsDup}ms`);
+    return;
+  }
 
   // ── Step 4: SightEngine ∥ Grok, then Claude ───────────────
   let mlResult: MlResult;

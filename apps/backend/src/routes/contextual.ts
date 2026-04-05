@@ -20,6 +20,7 @@ import { upload } from '../middleware/upload';
 import { analyzeImage, analyzeVideo } from '../services/sightengineService';
 import { callGrokContextual, type GrokContextualResult } from '../services/grokService';
 import { extractKeyFrames } from '../utils/videoUtils';
+import { consumeTrialCredit } from '../services/creditsService';
 
 export const contextualRouter = Router();
 
@@ -107,6 +108,16 @@ contextualRouter.post(
   requireAuth,
   upload.single('media'),
   async (req: AuthRequest, res) => {
+    const credit = await consumeTrialCredit(req.userId!);
+    if (!credit.ok) {
+      res.status(402).json({
+        error: 'Trial credits exhausted. Upgrade to continue.',
+        code: 'INSUFFICIENT_CREDITS',
+        remaining: credit.remaining,
+      });
+      return;
+    }
+
     const context:   string = typeof req.body.context    === 'string' ? req.body.context.trim()    : '';
     const sourceUrl: string = typeof req.body.source_url === 'string' ? req.body.source_url.trim() : '';
     const file = req.file;
@@ -119,7 +130,7 @@ contextualRouter.post(
       sourceUrl,
     );
 
-    res.json(result);
+    res.json({ ...result, remaining: credit.remaining });
   },
 );
 
@@ -142,6 +153,16 @@ function guessMimeFromUrl(url: string): string | null {
 }
 
 contextualRouter.post('/url', requireAuth, async (req: AuthRequest, res) => {
+  const credit = await consumeTrialCredit(req.userId!);
+  if (!credit.ok) {
+    res.status(402).json({
+      error: 'Trial credits exhausted. Upgrade to continue.',
+      code: 'INSUFFICIENT_CREDITS',
+      remaining: credit.remaining,
+    });
+    return;
+  }
+
   const mediaUrl: string  = typeof req.body.media_url  === 'string' ? req.body.media_url.trim()  : '';
   const context:  string  = typeof req.body.context    === 'string' ? req.body.context.trim()    : '';
   const sourceUrl: string = typeof req.body.source_url === 'string' ? req.body.source_url.trim() : '';
@@ -179,5 +200,5 @@ contextualRouter.post('/url', requireAuth, async (req: AuthRequest, res) => {
   const filename = mediaUrl ? mediaUrl.split('/').pop()?.split('?')[0] ?? 'media' : 'media';
 
   const result = await runAxes(fileBuffer, fileMime, filename, context, sourceUrl);
-  res.json(result);
+  res.json({ ...result, remaining: credit.remaining });
 });

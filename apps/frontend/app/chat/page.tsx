@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun'
+import { useTrialCredits } from '@/components/credits/CreditsProvider'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,8 @@ interface AnalysisResponse {
   authenticity?: AuthenticityResult
   contextual?: ContextualResult
   source?: ContextualResult
+  /** Present when trial credit was consumed; balance after this run */
+  remaining?: number
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -230,6 +233,7 @@ function getMisleadingExplanation(r: AnalysisResponse): { primary: string; secon
 export default function ChatPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { credits, unlimited, refresh: refreshCredits, openPaywall } = useTrialCredits()
 
   const [context, setContext]       = useState('')
   const [sourceUrl, setSourceUrl]   = useState('')
@@ -336,12 +340,19 @@ export default function ChatPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Request failed' }))
+        const err = (await res.json().catch(() => ({ error: 'Request failed' }))) as {
+          error?: string
+          code?: string
+        }
+        if (res.status === 402 && err.code === 'INSUFFICIENT_CREDITS') {
+          openPaywall()
+        }
         throw new Error(err.error || `HTTP ${res.status}`)
       }
 
       const data: AnalysisResponse = await res.json()
       setResult(data)
+      void refreshCredits()
       setAnalyzeProgress(100)
       await new Promise((r) => setTimeout(r, 420))
     } catch (err) {
@@ -381,6 +392,21 @@ export default function ChatPage() {
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Submit an image or video together with a claim or caption to verify whether the content matches the context.
           </p>
+          {credits !== null && (
+            <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+              {unlimited ? (
+                <span className="text-cyan font-medium">Pro: unlimited Verify Chat</span>
+              ) : (
+                <>
+                  Trial credits: <span className="font-mono text-foreground font-semibold">{credits}</span> — each run
+                  uses 1 credit.{' '}
+                  <a href="/#pricing" className="text-cyan hover:underline">
+                    Pricing
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Error banner */}

@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { normalizeApiBase, readJsonBody } from '@/lib/readApiResponse'
 import { useRotatingLoadingMessage } from '@/lib/loadingFun'
+import { useTrialCredits } from '@/components/credits/CreditsProvider'
 
 const SUPPORTED_TYPES = [
   { label: 'Images', ext: 'JPG, PNG, WebP', icon: ImageIcon, color: '#00d4ff' },
@@ -80,6 +81,7 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { credits, unlimited, refresh: refreshCredits, openPaywall } = useTrialCredits()
   const funLoadingMessage = useRotatingLoadingMessage(uploading)
 
   useEffect(() => {
@@ -179,6 +181,7 @@ export default function UploadPage() {
 
       const uploadData = await readJsonBody<{
         file_url?: string
+        content_hash?: string
         error?: string
       }>(uploadRes, 'Upload')
 
@@ -199,7 +202,11 @@ export default function UploadPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ file_url: uploadData.file_url, media_type: mediaType })
+        body: JSON.stringify({
+          file_url: uploadData.file_url,
+          media_type: mediaType,
+          ...(uploadData.content_hash ? { content_hash: uploadData.content_hash } : {}),
+        })
       })
 
       setUploadProgress(90)
@@ -207,9 +214,14 @@ export default function UploadPage() {
       const analyzeData = await readJsonBody<{
         job_id?: string
         error?: string
+        code?: string
+        remaining?: number
       }>(analyzeRes, 'Analyze')
 
       if (!analyzeRes.ok) {
+        if (analyzeRes.status === 402 && analyzeData.code === 'INSUFFICIENT_CREDITS') {
+          openPaywall()
+        }
         throw new Error(analyzeData.error ?? `Analysis failed (${analyzeRes.status})`)
       }
       if (!analyzeData.job_id) {
@@ -218,6 +230,7 @@ export default function UploadPage() {
         )
       }
       setUploadProgress(100)
+      void refreshCredits()
 
       setTimeout(() => router.push(`/result/${analyzeData.job_id}`), 300)
 
@@ -278,6 +291,21 @@ export default function UploadPage() {
           <p className="text-muted-foreground text-lg">
             Upload your media for instant deepfake and AI-generation analysis
           </p>
+          {credits !== null && (
+            <p className="text-sm text-muted-foreground mt-3">
+              {unlimited ? (
+                <span className="text-cyan font-medium">Pro: unlimited analyses</span>
+              ) : (
+                <>
+                  Trial credits: <span className="font-mono text-foreground font-semibold">{credits}</span> — each
+                  new analysis uses 1 credit.{' '}
+                  <a href="/#pricing" className="text-cyan hover:underline">
+                    Pricing
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Error */}

@@ -50,7 +50,7 @@ Use this as a checklist of what is implemented in the repo today. Pending items 
 - [x] **ML client** — [`mlService.ts`](../apps/backend/src/services/mlService.ts) multipart `callMlDetect`
 - [x] **Claude in backend** — verdict produced inside ML service (Option A); [`claudeService.ts`](../apps/backend/src/services/claudeService.ts) documents that
 
-**Local dev note:** The backend requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in [`apps/backend/.env`](../apps/backend/.env). If they are missing, `pnpm dev` fails with `supabaseUrl is required.` Load env before starting, or use hosted Supabase (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+**Local dev note:** The backend requires **`SUPABASE_URL`**, **`SUPABASE_ANON_KEY`**, and **`SUPABASE_SERVICE_ROLE_KEY`** in [`apps/backend/.env`](../apps/backend/.env) (plus **`JWT_SECRET`** and **`REDIS_URL`** for auth and the queue). If Supabase URL/anon are missing, startup fails with `supabaseUrl is required.` **Third-party API keys** used when wired: **`SIGHTENGINE_API_USER`** / **`SIGHTENGINE_API_SECRET`** (SightEngine), **`XAI_API_KEY`** (Grok), **`ANTHROPIC_API_KEY`** (Claude), **`RESEMBLE_API_KEY`** (audio/video audio), **`SAPLING_API_KEY`** (documents). See [`apps/backend/.env.example`](../apps/backend/.env.example) and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### ML service (`services/ml`)
 

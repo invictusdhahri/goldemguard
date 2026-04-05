@@ -125,6 +125,15 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response): Prom
       return;
     }
 
+    // Ensure public.users row exists (trial credits RPC + FKs) — same as register
+    if (data.user) {
+      const admin = getSupabaseServiceRole();
+      await admin.from('users').upsert(
+        { id: data.user.id, email: data.user.email ?? email },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+    }
+
     // 4. Return success response
     res.status(200).json({
       success: true,

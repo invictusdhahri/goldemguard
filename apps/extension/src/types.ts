@@ -45,6 +45,8 @@ export interface AnalysisResponse {
   authenticity?: AuthenticityResult;
   contextual?: ContextualResult;
   source?: ContextualResult;
+  /** Trial balance after this contextual/reveal run */
+  remaining?: number;
 }
 
 // ─── Reveal state per item ─────────────────────────────────────────────────────

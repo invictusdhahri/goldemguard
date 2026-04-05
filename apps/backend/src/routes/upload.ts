@@ -3,6 +3,7 @@ import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { createSupabaseWithAccessToken } from '../services/supabase';
 import { validateFileSize, storageObjectKey } from '../middleware/validation';
+import { sha256Hex } from '../utils/contentHash';
 import multer from 'multer';
 
 export const uploadRouter = Router();
@@ -59,10 +60,11 @@ uploadRouter.post(
         .from('uploads')
         .getPublicUrl(filePath);
 
-      // Step 7: Return success with file URL and metadata
+      // Step 7: Return success with file URL and metadata (content_hash enables analyze deduplication)
       res.status(200).json({
         message: 'File uploaded successfully',
         file_url: urlData.publicUrl,
+        content_hash: sha256Hex(file.buffer),
         file_path: filePath,
         file_name: file.originalname,
         file_size: file.size,

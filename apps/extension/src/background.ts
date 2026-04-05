@@ -260,6 +260,12 @@ async function reveal(item: ScrapedItem, token: string): Promise<AnalysisRespons
   }
 
   if (!res.ok) {
+    const code = parsed.code as string | undefined;
+    if (res.status === 402 && code === 'INSUFFICIENT_CREDITS') {
+      throw new Error(
+        'Trial credits exhausted. Open GolemGuard in the browser to view plans and upgrade.',
+      );
+    }
     throw new Error((parsed.error as string) ?? `HTTP ${res.status}`);
   }
 

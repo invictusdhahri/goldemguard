@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'GolemGuard — Detect. Explain. Trust.',
   description:
-    'Multimodal AI-generated content detection platform. Detect AI-generated images, video, audio, and documents with 94.4% accuracy.',
+    'Multimodal AI-generated content detection with SightEngine, Grok, Claude, Resemble, and Sapling—fused into plain-English verdicts with explainable evidence.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

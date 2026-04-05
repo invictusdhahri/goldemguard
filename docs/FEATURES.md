@@ -178,6 +178,25 @@ Evidence includes **frame-level scores**, Resemble audio evidence when run, and 
 | Detection / LLM APIs | SightEngine, xAI Grok, Anthropic Claude, Resemble, Sapling (as wired in worker) |
 | Frontend | Next.js App Router, Tailwind, shadcn-style UI |
 
+### API keys and environment variables (names)
+
+Configuration uses the same variable names as [`apps/backend/.env.example`](../apps/backend/.env.example). **Supabase** and **Redis** are required for a working API and worker; third-party detector keys are **optional** in the sense that missing keys cause that step to be skipped (with reasons surfaced in `models_skipped` / evidence), not a silent failure of the whole app.
+
+| Variable(s) | Provider / role |
+|-------------|-----------------|
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase — URL, anon key (API routes / JWT + RLS), service role (worker, storage) |
+| `JWT_SECRET` | Backend session signing |
+| `REDIS_URL` | BullMQ job queue |
+| `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET` | SightEngine — image and video signals |
+| `XAI_API_KEY` | xAI — Grok (vision, context, source checks) |
+| `ANTHROPIC_API_KEY` | Anthropic — Claude Haiku verdicts and synthesis (`ANTHROPIC_MODEL` optional) |
+| `RESEMBLE_API_KEY` | Resemble AI — audio deepfake and video audio segment |
+| `SAPLING_API_KEY` | Sapling AI — PDF/DOCX AI-likeness |
+
+**Frontend** ([`apps/frontend/.env.example`](../apps/frontend/.env.example)): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_API_URL` pointing at the backend.
+
+**Optional Python ML service** ([`services/ml/.env.example`](../services/ml/.env.example)) for standalone FastAPI experiments: `ANTHROPIC_API_KEY`, `GPTZERO_API_KEY`, and optionally `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` if that service is configured to talk to Supabase directly.
+
 ---
 
 ## Document history

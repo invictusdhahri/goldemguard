@@ -149,14 +149,28 @@ Push to `main` branch. Vercel deploys automatically on every push.
 
 ### 3.2 Environment Variables
 
+**Required (core API + worker + Supabase):**
+
 ```
 PORT=4000
 SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 JWT_SECRET=your-random-secret-at-least-32-chars
 REDIS_URL=redis://default:password@your-redis-host:6379
-ML_SERVICE_URL=https://your-hf-space.hf.space
-ANTHROPIC_API_KEY=your-anthropic-key
+```
+
+Async analysis runs in the backend worker using the third-party keys below (not a separate `ML_SERVICE_URL`; the optional Python app under `services/ml` is for standalone experiments).
+
+**Third-party detection / LLM keys** (set the ones you use; missing keys skip that detector with a documented reason in results):
+
+```
+SIGHTENGINE_API_USER=...
+SIGHTENGINE_API_SECRET=...
+XAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+RESEMBLE_API_KEY=...
+SAPLING_API_KEY=
 ```
 
 ### 3.3 Add Redis
@@ -251,12 +265,21 @@ RUN python -c "from transformers import pipeline; pipeline('image-classification
 ### Backend (`apps/backend/.env`)
 
 ```bash
+# Core — required
 SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 JWT_SECRET=your-random-secret-at-least-32-chars
 REDIS_URL=redis://localhost:6379
-ML_SERVICE_URL=http://localhost:8000
 PORT=4000
+
+# Third-party APIs — set per feature (see apps/backend/.env.example)
+SIGHTENGINE_API_USER=...
+SIGHTENGINE_API_SECRET=...
+XAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+RESEMBLE_API_KEY=...
+SAPLING_API_KEY=
 ```
 
 ### Frontend (`apps/frontend/.env.local`)

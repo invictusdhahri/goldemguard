@@ -8,6 +8,7 @@ import { analyzeRouter } from './routes/analyze';
 import { contextualRouter } from './routes/contextual';
 import { resultsRouter } from './routes/results';
 import { historyRouter } from './routes/history';
+import { accountRouter } from './routes/account';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/analyze/contextual', contextualRouter);
 app.use('/api', resultsRouter);
 app.use('/api/history', historyRouter);
+app.use('/api/account', accountRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });

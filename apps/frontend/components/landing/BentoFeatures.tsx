@@ -9,10 +9,10 @@ const FEATURES = [
     id: "image",
     icon: ImageIcon,
     title: "Image Detection",
-    model: "SigLIP v1",
-    accuracy: "94.4%",
+    model: "SightEngine + Grok + Claude",
+    accuracy: "Multi-signal",
     description:
-      "SigLIP semantic embeddings and GAN fingerprint analysis distinguish AI-generated images from authentic photography with sub-second precision.",
+      "SightEngine generative-AI scores, xAI Grok vision reasoning (optional web grounding), and Claude Haiku synthesis—fused with an explicit policy so the final label is an ensemble outcome.",
     tag: "Computer Vision",
     span: "md:col-span-2",
     accentVar: "--color-cyan",
@@ -21,9 +21,10 @@ const FEATURES = [
     id: "audio",
     icon: Mic,
     title: "Audio Detection",
-    model: "AASIST3",
-    accuracy: "91.2%",
-    description: "Anti-spoofing graph attention network trained on voice synthesis artifacts and deepfake audio patterns.",
+    model: "Resemble AI",
+    accuracy: "Deepfake",
+    description:
+      "Resemble AI analyzes uploaded audio (and extracted video audio) for synthetic speech, with structured evidence and chunk-level scores.",
     tag: "Signal Analysis",
     span: "md:col-span-1",
     accentVar: "--color-purple",
@@ -31,10 +32,11 @@ const FEATURES = [
   {
     id: "stats",
     icon: BarChart3,
-    title: "Live Confidence",
-    model: "Ensemble",
+    title: "Explainable verdicts",
+    model: "Fusion + evidence",
     accuracy: null,
-    description: "Real-time confidence scoring with per-region attribution maps — understand exactly why a verdict was reached.",
+    description:
+      "Per-model scores, which detectors ran or were skipped (and why), signals, and a plain-English explanation—so results are auditable, not a single opaque number.",
     tag: "Explainability",
     span: "md:col-span-1",
     accentVar: "--color-verified",
@@ -44,9 +46,10 @@ const FEATURES = [
     id: "video",
     icon: Film,
     title: "Video Detection",
-    model: "GenConViT",
-    accuracy: "89.7%",
-    description: "Temporal behavioral analysis across frames detects deepfakes that fool single-frame classifiers.",
+    model: "Resemble + SightEngine + Grok + Claude",
+    accuracy: "Audio-first",
+    description:
+      "Short audio segment via Resemble can short-circuit on synthetic speech; SightEngine video (or key-frame fallback), Grok on a representative frame, and Claude for synthesis.",
     tag: "Temporal Analysis",
     span: "md:col-span-2",
     accentVar: "--color-warn",
@@ -55,10 +58,10 @@ const FEATURES = [
     id: "docs",
     icon: FileText,
     title: "Document Detection",
-    model: "GPTZero + Perplexity",
-    accuracy: "92.1%",
+    model: "Sapling AI",
+    accuracy: "Doc-level",
     description:
-      "Dual-model ensemble scores burstiness and perplexity to identify LLM-generated text across all major AI writers.",
+      "Text extracted from PDF and DOCX is scored by Sapling for AI-likeness, with optional high-probability sentence signals when available.",
     tag: "NLP Analysis",
     span: "md:col-span-2",
     accentVar: "--color-cyan",
@@ -66,10 +69,11 @@ const FEATURES = [
   {
     id: "privacy",
     icon: Lock,
-    title: "Zero Retention",
-    model: "Privacy-First",
+    title: "Account-scoped storage",
+    model: "Supabase + JWT",
     accuracy: null,
-    description: "Files analyzed in-memory, never stored. Enterprise-grade privacy by design.",
+    description:
+      "Authenticated uploads go to a private Supabase Storage bucket; jobs and results are row-level secured and tied to your account—not a public drop zone.",
     tag: "Privacy",
     span: "md:col-span-1",
     accentVar: "--color-verified",
@@ -191,8 +195,9 @@ export default function BentoFeatures() {
             <span style={{ color: "var(--foreground)" }}>Detect Across</span>{" "}
             <span className="gradient-text-purple">Every Medium</span>
           </h2>
-          <p className="text-base max-w-xl" style={{ color: "var(--muted-foreground)" }}>
-            Four specialized AI models, each trained on domain-specific artifacts. One unified API to interrogate them all.
+          <p className="text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
+            Production stack: SightEngine, xAI Grok, Anthropic Claude, Resemble, and Sapling—composed per modality with
+            documented fusion. One backend API coordinates them all.
           </p>
         </FadeInUp>
 

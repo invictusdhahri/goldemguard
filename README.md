@@ -58,14 +58,16 @@ User uploads file
 
 ### Detection Pipelines
 
-| Modality | Primary Model | Fallbacks | Always-On Signal |
-|----------|--------------|-----------|------------------|
-| Image | SigLIP v1 (94.4%) | UniversalFakeDetect, ViT | EXIF forensics |
-| Video | GenConViT (~93%) | EfficientViT, Xception, Frame-SigLIP | MediaPipe behavioral |
-| Audio | AASIST3 (~96% F1) | Wav2Vec2, MFCC+RF | Spectral flatness |
-| Document | GPTZero (~99%) | Perplexity scoring | PyMuPDF metadata |
+The **backend worker** (`apps/backend`) calls third-party APIs per modality and fuses results (see `docs/FEATURES.md`). The optional Python app under `services/ml` is for experiments and is not required for production uploads.
 
-Every modality runs a **fallback chain** — if the primary model fails (import error, OOM, timeout, or low confidence), the next model takes over automatically.
+| Modality | Integrations | Role |
+|----------|--------------|------|
+| Image | SightEngine, xAI Grok, Anthropic Claude Haiku | Generative-AI scores, vision reasoning, synthesis |
+| Video | Resemble (audio), SightEngine (video or key frame), Grok, Claude | Audio-first short-circuit; temporal / frame evidence |
+| Audio | Resemble AI | Deepfake / synthetic-speech detection |
+| Document | Sapling AI | AI-likeness after PDF/DOCX text extraction |
+
+Missing API keys or failed calls are **skipped with a recorded reason**—the job still completes with whatever signals succeeded.
 
 ---
 

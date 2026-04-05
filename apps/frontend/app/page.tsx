@@ -6,6 +6,7 @@ import ExtensionShowcase from "@/components/landing/ExtensionShowcase";
 import TerminalDemo from "@/components/landing/TerminalDemo";
 import FallbackChain from "@/components/landing/FallbackChain";
 import CTA from "@/components/landing/CTA";
+import Pricing from "@/components/landing/Pricing";
 import WatchDemo from "@/components/landing/WatchDemo";
 import Footer from "@/components/landing/Footer";
 
@@ -20,6 +21,7 @@ export default function HomePage() {
       <TerminalDemo />
       <FallbackChain />
       <CTA />
+      <Pricing />
       <WatchDemo />
       <Footer />
     </main>

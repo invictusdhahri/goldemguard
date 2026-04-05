@@ -78,7 +78,7 @@ function VillagerLightDecor() {
 }
 
 const STATS = [
-  { value: 94.4, suffix: "%", label: "Detection accuracy", decimals: 1 },
+  { value: 5, suffix: "", label: "Detection APIs", decimals: 0 },
   { value: 4, suffix: "", label: "AI modalities", decimals: 0 },
   { value: 2, suffix: "s", label: "Avg. response", decimals: 0, prefix: "<" },
 ];

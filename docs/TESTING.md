@@ -117,13 +117,12 @@ curl -sS -X POST http://localhost:8000/detect/video/ -F "file=@/path/to/video.mp
 To exercise uploads and jobs the same way production does:
 
 1. **Redis** running (BullMQ), e.g. `redis://localhost:6379`.
-2. **Supabase** project and **`apps/backend/.env`** filled (see [DEPLOYMENT.md](DEPLOYMENT.md) and `apps/backend/.env.example`).
-3. Set **`ML_SERVICE_URL=http://localhost:8000`** in `apps/backend/.env`.
-4. Terminal A — ML: `cd services/ml && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 --reload-dir app`
-5. Terminal B — monorepo: from repo root, `pnpm dev` (frontend ~3001, backend ~4000).
-6. Open **http://localhost:3001**, register/login, upload, and run analysis; poll status until the job completes.
+2. **Supabase** project and **`apps/backend/.env`** filled (see [DEPLOYMENT.md](DEPLOYMENT.md) and `apps/backend/.env.example`). Minimum: **`SUPABASE_URL`**, **`SUPABASE_ANON_KEY`**, **`SUPABASE_SERVICE_ROLE_KEY`**, **`JWT_SECRET`**, **`REDIS_URL`**. For full multimodal behavior, set the third-party keys you need: **`SIGHTENGINE_API_USER`** / **`SIGHTENGINE_API_SECRET`**, **`XAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`RESEMBLE_API_KEY`**, **`SAPLING_API_KEY`** (each gates its pipeline step). The BullMQ worker runs these integrations inside the backend; it does not call the optional Python service under `services/ml`.
+3. Terminal A — ML (optional, for [§1](#1-ml-service-only-fastapi) only): `cd services/ml && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 --reload-dir app`
+4. Terminal B — monorepo: from repo root, `pnpm dev` (frontend ~3001, backend ~4000).
+5. Open **http://localhost:3001**, register/login, upload, and run analysis; poll status until the job completes.
 
-If the backend cannot reach the ML URL or Redis, jobs may stay pending or fail — check backend logs and `REDIS_URL`.
+If Redis is unreachable or required env vars are missing, jobs may stay pending or fail — check backend logs and `REDIS_URL`.
 
 ---
 

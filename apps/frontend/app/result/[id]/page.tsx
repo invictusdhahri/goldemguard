@@ -116,6 +116,11 @@ function scoreBadge(score: number): { label: string; color: string } {
   return                    { label: 'Uncertain',    color: 'text-amber-400' };
 }
 
+/** Resemble returns this when optional intelligence text fails to generate. */
+function isResembleIntelligenceErrorMessage(s: string): boolean {
+  return /^error generating intelligence/i.test(s.trim());
+}
+
 /** Friendly display label for Resemble source-tracing identifiers. */
 function formatSourceLabel(label: string): string {
   const map: Record<string, string> = {
@@ -433,7 +438,8 @@ export default function ResultPage() {
                   )}
 
                   {/* Intelligence analysis */}
-                  {resembleEv.intelligence && (
+                  {resembleEv.intelligence &&
+                    !isResembleIntelligenceErrorMessage(resembleEv.intelligence) && (
                     <div className="flex items-start gap-4 rounded-xl bg-secondary/50 border border-border p-4">
                       <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">

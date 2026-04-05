@@ -10,31 +10,31 @@ const STEPS = [
     icon: Upload,
     title: "Upload Content",
     description:
-      "Submit any file type — image, video, audio, or document — via the REST API or web interface. No preprocessing required.",
+      "Submit image, video, audio, or document via the REST API or web app. Files land in private Supabase Storage; a BullMQ job picks up the work.",
     accentVar: "--color-cyan",
   },
   {
     number: "02",
     icon: Cpu,
-    title: "Primary Detection",
+    title: "Multi-signal detection",
     description:
-      "Our specialized model for your content type runs an inference pass, analyzing semantic patterns and artifact signatures.",
+      "The worker runs the right third-party APIs for the modality—e.g. SightEngine + Grok + Claude for images, Resemble for audio, Sapling for documents.",
     accentVar: "--color-purple",
   },
   {
     number: "03",
     icon: RotateCcw,
-    title: "Auto-Fallback",
+    title: "Fusion & skips",
     description:
-      "If the primary model times out or returns low confidence, the system automatically reroutes to a backup model. Zero dropped requests.",
+      "Scores are merged with a documented policy. If an API key is missing or a call fails, that step is skipped and recorded—so you always get a traceable outcome.",
     accentVar: "--color-warn",
   },
   {
     number: "04",
     icon: ShieldCheck,
-    title: "Final Verdict",
+    title: "Final verdict",
     description:
-      "Receive a confidence score, attribution map, and structured verdict in under 2 seconds. Always a result, always explainable.",
+      "Structured result: verdict class, confidence, explanation, per-model evidence, and optional caveat—ready for the dashboard or extension.",
     accentVar: "--color-verified",
   },
 ];
@@ -78,8 +78,8 @@ export default function FallbackChain() {
             <span style={{ color: "var(--foreground)" }}>A Verdict,</span>{" "}
             <span className="gradient-text">Every Single Time</span>
           </h2>
-          <p className="text-base max-w-xl" style={{ color: "var(--muted-foreground)" }}>
-            Self-healing fallback architecture automatically reroutes to backup models so detection never fails — even when primary models are overloaded.
+          <p className="text-base max-w-xl text-pretty" style={{ color: "var(--muted-foreground)" }}>
+            Defense in depth: multiple commercial APIs per modality, explicit fusion, and transparent skip reasons—built for demos you can defend in review.
           </p>
         </FadeInUp>
 
@@ -158,38 +158,6 @@ export default function FallbackChain() {
             );
           })}
         </motion.div>
-
-        {/* Bottom stat strip */}
-        <FadeInUp delay={0.4} className="mt-12">
-          <div
-            className="liquid-glass-card p-6 flex flex-wrap items-center justify-center gap-8"
-          >
-            {[
-              { value: "99.9%", label: "Uptime SLA" },
-              { value: "<2s", label: "Avg. verdict time" },
-              { value: "0", label: "Dropped requests" },
-              { value: "4", label: "Fallback layers" },
-            ].map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-1 px-4">
-                <span
-                  className="text-2xl font-bold"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    background: "linear-gradient(135deg, var(--color-purple), var(--color-cyan))",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  {item.value}
-                </span>
-                <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </FadeInUp>
       </div>
     </section>
   );

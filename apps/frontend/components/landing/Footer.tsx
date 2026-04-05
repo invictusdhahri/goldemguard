@@ -13,7 +13,7 @@ const LINKS: Record<string, FooterLink[]> = {
   Product: [
     { label: "Features", sectionId: "features" },
     { label: "How It Works", sectionId: "how-it-works" },
-    { label: "Pricing", href: "#" },
+    { label: "Pricing", href: "/#pricing" },
     { label: "Changelog", href: "#" },
   ],
   Resources: [

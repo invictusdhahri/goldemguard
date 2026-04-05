@@ -235,7 +235,12 @@ function buildExplanation(
 function intelligenceDescription(intel: DetectionItem['intelligence']): string | null {
   if (!intel?.description) return null;
   const d = intel.description;
-  return typeof d === 'string' ? d : null;
+  if (typeof d !== 'string') return null;
+  const s = d.trim();
+  if (!s) return null;
+  // API returns this when the optional intelligence step fails — not user-facing content
+  if (/^error generating intelligence/i.test(s)) return null;
+  return s;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
