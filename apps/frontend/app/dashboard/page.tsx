@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import { Upload, MessageSquare, Clock, FlaskConical, ArrowLeft } from 'lucide-react'
+import { SignOutButton } from '@/components/dashboard/SignOutButton'
+import { DashboardVillagerBubble } from '@/components/dashboard/DashboardVillagerBubble'
+import { DashboardMinecraftGarden } from '@/components/dashboard/DashboardMinecraftGarden'
 
 const ACTIONS = [
   {
@@ -39,10 +42,10 @@ const ACTIONS = [
 export default function DashboardPage() {
   return (
     <main
-      className="flex min-h-screen flex-col items-center gap-8 px-4 py-8"
+      className="relative flex min-h-screen flex-col items-center gap-8 px-4 py-8 pb-[min(160px,22vh)]"
       style={{ background: 'var(--background)' }}
     >
-      <div className="w-full max-w-4xl flex justify-start">
+      <div className="w-full max-w-4xl flex items-center justify-between gap-4">
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -50,6 +53,7 @@ export default function DashboardPage() {
           <ArrowLeft size={16} aria-hidden />
           Back to home
         </Link>
+        <SignOutButton />
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 w-full">
@@ -89,6 +93,12 @@ export default function DashboardPage() {
         ))}
       </div>
       </div>
+
+      <div className="relative z-10 w-full max-w-4xl mt-auto flex flex-col items-center justify-end pt-10 pb-2">
+        <DashboardVillagerBubble />
+      </div>
+
+      <DashboardMinecraftGarden />
     </main>
   )
 }
