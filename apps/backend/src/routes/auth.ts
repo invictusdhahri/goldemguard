@@ -24,7 +24,8 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { supabase } from '../services/supabase';
+import { supabase, getSupabaseServiceRole } from '../services/supabase';
+import { authLimiter } from '../middleware/rateLimit';
 
 export const authRouter = Router();
 
@@ -39,7 +40,7 @@ const authSchema = z.object({
  * @desc    Register a new user with Supabase Auth
  * @access  Public
  */
-authRouter.post('/register', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/register', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     // 1. Validate request body
     const result = authSchema.safeParse(req.body);
@@ -64,9 +65,21 @@ authRouter.post('/register', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // 4. Return success response
+    // 4. Insert into public.users so FK constraints on analysis_jobs pass
+    if (data.user) {
+      const admin = getSupabaseServiceRole();
+      await admin.from('users').upsert(
+        { id: data.user.id, email: data.user.email ?? email },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+    }
+
+    // 5. Return success response
     res.status(201).json({
-      message: 'Registration successful. Check your email for a confirmation link.',
+      success: true,
+      message: data.session
+        ? 'Account created successfully.'
+        : 'Account created! Check your email for a confirmation link.',
       user: data.user,
       session: data.session,
     });
@@ -83,7 +96,7 @@ authRouter.post('/register', async (req: Request, res: Response): Promise<void> 
  * @desc    Authenticate user with Supabase Auth
  * @access  Public
  */
-authRouter.post('/login', async (req: Request, res: Response): Promise<void> => {
+authRouter.post('/login', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     // 1. Validate request body
     const result = authSchema.safeParse(req.body);
@@ -114,6 +127,7 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
 
     // 4. Return success response
     res.status(200).json({
+      success: true,
       message: 'Login successful',
       user: data.user,
       session: data.session,
