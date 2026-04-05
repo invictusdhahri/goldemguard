@@ -53,3 +53,5 @@ coverage/
 
 # misc
 *.tsbuildinfo
+apps/extension/dist
+apps/extension/node_modules

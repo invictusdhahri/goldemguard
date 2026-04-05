@@ -33,14 +33,12 @@ export default function Footer() {
           {/* Links */}
           <nav className="flex flex-wrap items-center justify-center gap-1">
             {FOOTER_LINKS.map((link) => {
-              const Icon = link.icon;
               return (
                 <a
                   key={link.label}
                   href={link.href}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200"
                 >
-                  {Icon && <Icon size={12} />}
                   {link.label}
                 </a>
               );

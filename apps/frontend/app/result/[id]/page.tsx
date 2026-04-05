@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -23,7 +24,6 @@ import {
 import { useJobStatus, useResult } from '@/hooks/useAnalysis';
 import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect } from 'react';
 import InteractiveBackground from '../../../components/InteractiveBackground';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

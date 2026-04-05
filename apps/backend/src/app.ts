@@ -4,6 +4,7 @@ import { apiLimiter } from './middleware/rateLimit';
 import { authRouter } from './routes/auth';
 import { uploadRouter } from './routes/upload';
 import { analyzeRouter } from './routes/analyze';
+import { contextualRouter } from './routes/contextual';
 import { resultsRouter } from './routes/results';
 import { historyRouter } from './routes/history';
 
@@ -16,6 +17,7 @@ app.use(apiLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/analyze', analyzeRouter);
+app.use('/api/analyze/contextual', contextualRouter);
 app.use('/api', resultsRouter);
 app.use('/api/history', historyRouter);
 
