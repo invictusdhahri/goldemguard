@@ -25,6 +25,7 @@ import { Worker, type Job, UnrecoverableError } from 'bullmq';
 import IORedis from 'ioredis';
 import { getSupabaseServiceRole, storageObjectPathFromFileUrl } from '../services/supabase';
 import { analyzeImage, unsupportedMediaResult, type SightEngineResult } from '../services/sightengineService';
+import { analyzeAudio } from '../services/resembleService';
 import { callGrok, isValidGrokResult, type GrokResult } from '../services/grokService';
 import { callClaude } from '../services/claudeService';
 
@@ -298,12 +299,47 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
     : ext === 'webp' ? 'image/webp'
     : 'image/jpeg';
 
-  log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — SightEngine + Grok (parallel)`);
+  log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — dispatching to analysis pipeline`);
 
   // ── Step 4: SightEngine ∥ Grok, then Claude ───────────────
   let mlResult: MlResult;
   try {
-    if (mediaType !== 'image') {
+    if (mediaType === 'audio') {
+      // ── Audio: Resemble AI deepfake detection ─────────────
+      log('info', jobId, '🎙️  Audio detected — calling Resemble AI (file upload)');
+      const resembleResult = await analyzeAudio(buffer, filename);
+
+      mlResult = {
+        verdict:        resembleResult.verdict,
+        confidence:     resembleResult.confidence,
+        explanation:    resembleResult.explanation,
+        model_scores:   resembleResult.model_scores,
+        models_run:     resembleResult.models_run,
+        models_skipped: resembleResult.models_skipped,
+        top_signals:    resembleResult.top_signals,
+        caveat:         resembleResult.caveat,
+        model_evidence: {
+          resemble: {
+            ran:              true,
+            sample_seconds:   resembleResult.resemble_raw.sample_seconds,
+            label:            resembleResult.resemble_raw.label as 'fake' | 'real' | 'uncertain',
+            aggregated_score: parseFloat(resembleResult.resemble_raw.aggregated_score),
+            chunk_scores:     resembleResult.resemble_raw.chunk_scores,
+            consistency:      resembleResult.resemble_raw.consistency,
+            source_tracing:   resembleResult.resemble_raw.source_tracing,
+            intelligence:     resembleResult.resemble_raw.intelligence,
+          },
+        },
+      };
+
+      log(
+        'info',
+        jobId,
+        `🎙️  Resemble AI done — label=${resembleResult.resemble_raw.label} ` +
+        `score=${resembleResult.resemble_raw.aggregated_score} ` +
+        `source=${resembleResult.resemble_raw.source_tracing ?? 'n/a'}`,
+      );
+    } else if (mediaType !== 'image') {
       const sightEngineResult = await callSightEngine(mediaType, buffer, filename, jobId);
       mlResult = {
         ...sightEngineResult,
@@ -483,7 +519,7 @@ try {
   });
 
   console.log(
-    '[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, backend=SightEngine+Grok+Claude',
+    '[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, backend=SightEngine+Grok+Claude (images) / Resemble (audio)',
   );
 } catch (err) {
   console.warn('[worker] ⚠️  Failed to start — Redis likely unavailable:', (err as Error).message);

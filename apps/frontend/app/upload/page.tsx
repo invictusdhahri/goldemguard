@@ -108,13 +108,15 @@ export default function UploadPage() {
     setUploading(true)
     setError('')
 
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'
+
     try {
       // Step 1: Upload file
       const formData = new FormData()
       formData.append('file', file)
 
       const token = localStorage.getItem('token')
-      const uploadRes = await fetch('http://localhost:4000/api/upload', {
+      const uploadRes = await fetch(`${apiBase}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -129,13 +131,13 @@ export default function UploadPage() {
 
       const uploadData = await uploadRes.json()
 
-      // Step 2: Create analysis job
+      // Step 2: Derive media type from MIME type and create analysis job
       const mediaType = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('video/') ? 'video'
         : file.type.startsWith('audio/') ? 'audio'
         : 'document'
 
-      const analyzeRes = await fetch('http://localhost:4000/api/analyze', {
+      const analyzeRes = await fetch(`${apiBase}/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
