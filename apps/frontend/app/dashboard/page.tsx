@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Upload, MessageSquare, Clock } from 'lucide-react'
+import { Upload, MessageSquare, Clock, FlaskConical } from 'lucide-react'
 
 const ACTIONS = [
   {
@@ -16,6 +16,14 @@ const ACTIONS = [
     label:   'File Scanner',
     desc:    'Deep-scan any media file for AI generation',
     color:   '#8b5cf6',
+    primary: false,
+  },
+  {
+    href:    '/extension-test',
+    icon:    FlaskConical,
+    label:   'Extension test',
+    desc:    'Sample feed for the browser extension',
+    color:   '#22d3ee',
     primary: false,
   },
   {
