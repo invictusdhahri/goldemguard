@@ -1,6 +1,10 @@
 {
   "extends": "@veritas/tsconfig/nextjs.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "declaration": false,
+    "declarationMap": false,
     "paths": {
       "@/*": ["./*"]
     }

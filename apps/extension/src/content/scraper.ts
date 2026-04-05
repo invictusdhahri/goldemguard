@@ -5,16 +5,12 @@
  */
 
 import type { ScrapedItem } from '../types';
-import { scrapeTwitter }  from './platforms/twitter';
-import { scrapeFacebook } from './platforms/facebook';
-import { scrapeYoutube }  from './platforms/youtube';
-import { scrapeGeneric }  from './platforms/generic';
+import { scrapeTwitter } from './platforms/twitter';
+import { scrapeGeneric } from './platforms/generic';
 
-function detectPlatform(): 'twitter' | 'facebook' | 'youtube' | 'generic' {
+function detectPlatform(): 'twitter' | 'generic' {
   const host = window.location.hostname;
   if (host.includes('twitter.com') || host.includes('x.com')) return 'twitter';
-  if (host.includes('facebook.com') || host.includes('fb.com')) return 'facebook';
-  if (host.includes('youtube.com') || host.includes('youtu.be')) return 'youtube';
   return 'generic';
 }
 
@@ -32,10 +28,12 @@ function scrape(): ScrapedItem[] {
   let items: ScrapedItem[];
 
   switch (platform) {
-    case 'twitter':  items = scrapeTwitter();  break;
-    case 'facebook': items = scrapeFacebook(); break;
-    case 'youtube':  items = scrapeYoutube();  break;
-    default:         items = scrapeGeneric();  break;
+    case 'twitter':
+      items = scrapeTwitter();
+      break;
+    default:
+      items = scrapeGeneric();
+      break;
   }
 
   return dedupeById(items);

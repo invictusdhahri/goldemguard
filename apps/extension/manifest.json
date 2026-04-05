@@ -23,8 +23,6 @@
       "matches": [
         "*://*.twitter.com/*",
         "*://*.x.com/*",
-        "*://*.facebook.com/*",
-        "*://*.youtube.com/*",
         "<all_urls>"
       ],
       "js": ["src/content/scraper.ts"],

@@ -3,7 +3,7 @@
 // ─── Scraped content from the active page ─────────────────────────────────────
 
 export type ItemType = 'post' | 'image' | 'video' | 'document';
-export type Platform = 'twitter' | 'facebook' | 'youtube' | 'generic';
+export type Platform = 'twitter' | 'generic';
 export type MediaType = 'image' | 'video' | null;
 
 export interface ScrapedItem {

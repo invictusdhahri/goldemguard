@@ -18,10 +18,7 @@ function MediaTypeIcon({ type }: { type: ScrapedItem['mediaType'] | 'document' }
 }
 
 function PlatformBadge({ platform }: { platform: ScrapedItem['platform'] }) {
-  const label = platform === 'twitter' ? 'X / Twitter'
-    : platform === 'facebook' ? 'Facebook'
-    : platform === 'youtube'  ? 'YouTube'
-    : 'Web';
+  const label = platform === 'twitter' ? 'X / Twitter' : 'Web';
   return (
     <span
       className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
