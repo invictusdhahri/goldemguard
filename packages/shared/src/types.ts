@@ -85,6 +85,16 @@ export interface ModelEvidence {
         intelligence: string | null;
       }
     | { ran: false; skip_reason: string };
+  /** Present for document analyses only. */
+  sapling?:
+    | {
+        ran: true;
+        /** Raw Sapling AI probability score (0–1). */
+        score: number;
+        verdict: Verdict;
+        sentence_count: number;
+      }
+    | { ran: false; skip_reason: string };
 }
 
 export interface FinalResponse {

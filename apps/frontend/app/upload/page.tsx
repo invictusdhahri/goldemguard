@@ -55,11 +55,13 @@ export default function UploadPage() {
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
       'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
       'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac',
-      'application/pdf'
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
     ]
     
     if (!allowedTypes.includes(selectedFile.type)) {
-      setError(`File type not supported. Please upload an image, video, audio, or PDF file.`)
+      setError(`File type not supported. Please upload an image, video, audio, PDF, or Word document.`)
       return false
     }
     
@@ -307,7 +309,7 @@ export default function UploadPage() {
                 
                 {/* Supported formats */}
                 <div className="flex flex-wrap justify-center gap-3 pt-4">
-                  {['Images', 'Videos', 'Audio', 'PDFs'].map((type) => (
+                  {['Images', 'Videos', 'Audio', 'PDFs', 'Word Docs'].map((type) => (
                     <span
                       key={type}
                       className="px-4 py-2 text-sm bg-slate-800/50 border border-slate-700 rounded-lg text-slate-300"
@@ -327,7 +329,7 @@ export default function UploadPage() {
               id="file-input"
               type="file"
               onChange={handleFileChange}
-              accept="image/*,video/*,audio/*,.pdf"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
               className="hidden"
             />
           </div>

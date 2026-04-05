@@ -28,6 +28,8 @@ import { analyzeImage, unsupportedMediaResult, type SightEngineResult } from '..
 import { analyzeAudio } from '../services/resembleService';
 import { callGrok, isValidGrokResult, type GrokResult } from '../services/grokService';
 import { callClaude } from '../services/claudeService';
+import { analyzeSaplingText } from '../services/saplingService';
+import { extractText } from '../utils/extractText';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -291,12 +293,15 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
   }
 
   const filename = objectPath.split('/').pop() ?? 'upload';
-  // Infer MIME type from extension for Grok's vision input
+  // Infer MIME type from extension (used for Grok vision input and document text extraction)
   const ext      = filename.split('.').pop()?.toLowerCase() ?? '';
   const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
     : ext === 'png'  ? 'image/png'
     : ext === 'gif'  ? 'image/gif'
     : ext === 'webp' ? 'image/webp'
+    : ext === 'pdf'  ? 'application/pdf'
+    : ext === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    : ext === 'doc'  ? 'application/msword'
     : 'image/jpeg';
 
   log('info', jobId, `📦 Downloaded ${(buffer.byteLength / 1024).toFixed(1)} KB — dispatching to analysis pipeline`);
@@ -339,18 +344,81 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
         `score=${resembleResult.resemble_raw.aggregated_score} ` +
         `source=${resembleResult.resemble_raw.source_tracing ?? 'n/a'}`,
       );
-    } else if (mediaType !== 'image') {
+    } else if (mediaType === 'document') {
+      // ── Document: Sapling AI text detection ───────────────
+      log('info', jobId, `📄 Document detected (${mimeType}) — extracting text for Sapling AI`);
+
+      let extractedText: string;
+      try {
+        extractedText = await extractText(buffer, mimeType);
+        log('info', jobId, `📄 Extracted ${extractedText.length} chars from document`);
+      } catch (err) {
+        log('warn', jobId, `📄 Text extraction failed: ${(err as Error).message} — marking UNCERTAIN`);
+        mlResult = {
+          verdict:        'UNCERTAIN',
+          confidence:     0.5,
+          explanation:    `Could not extract text from this document: ${(err as Error).message}`,
+          model_scores:   { sapling_aidetect: 0 },
+          models_run:     [],
+          models_skipped: ['sapling_aidetect'],
+          top_signals:    [],
+          caveat:         'Text extraction failed; analysis could not be performed.',
+          model_evidence: {
+            sapling: { ran: false, skip_reason: `Text extraction failed: ${(err as Error).message}` },
+          },
+        };
+        // Skip to persist — mlResult already assigned via the extraction-failure path
+        const processingMsExt = Date.now() - t0;
+        log('info', jobId, `✅ Analysis done (extraction failure) — verdict=UNCERTAIN in ${processingMsExt}ms`);
+        await persistResult(jobId, mlResult, processingMsExt);
+        await setJobStatus(jobId, 'done');
+        log('info', jobId, `🎉 Job complete — total=${processingMsExt}ms`);
+        return;
+      }
+
+      const saplingResult = await analyzeSaplingText(extractedText);
+      log(
+        'info',
+        jobId,
+        `📝 Sapling AI done — score=${saplingResult.score.toFixed(3)} verdict=${saplingResult.verdict} ` +
+        `sentences=${saplingResult.sentence_count}`,
+      );
+
+      mlResult = {
+        verdict:      saplingResult.verdict,
+        confidence:   saplingResult.score,
+        explanation:  `Sapling AI text analysis scored ${(saplingResult.score * 100).toFixed(1)}% AI probability across ${saplingResult.sentence_count} sentence(s).`,
+        model_scores: { sapling_aidetect: saplingResult.score },
+        models_run:   ['sapling_aidetect'],
+        models_skipped: [
+          'sightengine_genai',
+          'grok_grok4fast',
+          'claude_haiku',
+          'resemble_ai',
+        ],
+        top_signals: saplingResult.sentence_scores
+          .filter((s) => s.score >= 0.7)
+          .slice(0, 3)
+          .map((s) => `High AI probability sentence (${(s.score * 100).toFixed(0)}%): "${s.sentence.slice(0, 80)}…"`),
+        caveat: null,
+        model_evidence: {
+          sapling: {
+            ran:            true,
+            score:          saplingResult.score,
+            verdict:        saplingResult.verdict,
+            sentence_count: saplingResult.sentence_count,
+          },
+        },
+      };
+    } else if (mediaType === 'video') {
+      // ── Video: not yet supported ───────────────────────────
       const sightEngineResult = await callSightEngine(mediaType, buffer, filename, jobId);
       mlResult = {
         ...sightEngineResult,
         model_evidence: {
-          sightengine: {
-            ai_likeness: sightEngineResult.confidence,
-            verdict:     sightEngineResult.verdict,
-            proof:       sightEngineResult.explanation,
-          },
-          grok:   { ran: false, skip_reason: 'Vision models only run on images' },
-          claude: { ran: false, skip_reason: 'Claude synthesis runs after image vision pipeline' },
+          sapling: { ran: false, skip_reason: 'Text detection only applies to documents' },
+          grok:    { ran: false, skip_reason: 'Vision models only run on images' },
+          claude:  { ran: false, skip_reason: 'Claude synthesis runs after image vision pipeline' },
         },
       };
     } else {
@@ -519,7 +587,7 @@ try {
   });
 
   console.log(
-    '[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, backend=SightEngine+Grok+Claude (images) / Resemble (audio)',
+    '[worker] 🚀 Analysis worker started — concurrency=2, rateLimit=10/min, backend=SightEngine+Grok+Claude (images) / Resemble (audio) / Sapling (documents)',
   );
 } catch (err) {
   console.warn('[worker] ⚠️  Failed to start — Redis likely unavailable:', (err as Error).message);
