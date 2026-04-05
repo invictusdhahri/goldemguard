@@ -121,6 +121,13 @@ export interface MsgCheckAuth {
   type: 'CHECK_AUTH';
 }
 
+/** Sent from content script when the web app has (or cleared) a session in localStorage */
+export interface MsgImportWebSession {
+  type: 'IMPORT_WEB_SESSION';
+  token: string | null;
+  email?: string;
+}
+
 export interface MsgAuthState {
   type: 'AUTH_STATE';
   loggedIn: boolean;
@@ -138,4 +145,5 @@ export type ExtMessage =
   | MsgLoginError
   | MsgLogout
   | MsgCheckAuth
+  | MsgImportWebSession
   | MsgAuthState;

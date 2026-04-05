@@ -3,7 +3,7 @@
   "name": "VeritasAI",
   "version": "0.1.0",
   "description": "Detect AI-generated media and verify claims on any page — powered by VeritasAI.",
-  "permissions": ["activeTab", "storage", "scripting"],
+  "permissions": ["activeTab", "storage", "scripting", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "src/popup/index.html",
@@ -26,6 +26,16 @@
         "<all_urls>"
       ],
       "js": ["src/content/scraper.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "https://veritasai.com/*",
+        "https://www.veritasai.com/*"
+      ],
+      "js": ["src/content/webAuthSync.ts"],
       "run_at": "document_idle"
     }
   ],

@@ -13,6 +13,7 @@ import type {
   ScrapedItem,
   AnalysisResponse,
   MsgScrapeResult,
+  MsgImportWebSession,
 } from './types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -31,6 +32,80 @@ async function getApiBase(): Promise<string> {
       resolve(stored?.trim() || BUILT_IN_API_BASE);
     });
   });
+}
+
+/** Origins where the Next.js app stores `token` / `user` in localStorage (build-time list). */
+const BUILT_IN_WEB_APP_ORIGINS =
+  typeof import.meta.env.VITE_WEB_APP_ORIGINS === 'string' &&
+  import.meta.env.VITE_WEB_APP_ORIGINS.trim() !== ''
+    ? import.meta.env.VITE_WEB_APP_ORIGINS.trim()
+    : 'http://localhost:3000,http://127.0.0.1:3000,https://veritasai.com,https://www.veritasai.com';
+
+function getWebAppOrigins(): string[] {
+  return BUILT_IN_WEB_APP_ORIGINS.split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+}
+
+function emailFromJwt(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(b64);
+    const payload = JSON.parse(json) as { email?: string };
+    return typeof payload.email === 'string' && payload.email ? payload.email : null;
+  } catch {
+    return null;
+  }
+}
+
+/** If the user is signed in on an open web app tab, copy session into extension storage. */
+async function trySyncAuthFromBrowserTabs(): Promise<StoredAuth | null> {
+  const origins = getWebAppOrigins();
+  for (const origin of origins) {
+    let tabs: chrome.tabs.Tab[];
+    try {
+      tabs = await chrome.tabs.query({ url: `${origin}/*` });
+    } catch {
+      continue;
+    }
+    for (const tab of tabs) {
+      if (!tab.id) continue;
+      try {
+        const [execResult] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: 'MAIN',
+          func: () => {
+            const token = localStorage.getItem('token');
+            const userRaw = localStorage.getItem('user');
+            return {
+              token: token && token.trim().length > 0 ? token.trim() : null,
+              userRaw,
+            };
+          },
+        });
+        const r = execResult?.result as { token: string | null; userRaw: string | null } | undefined;
+        if (!r?.token) continue;
+        let email: string | undefined;
+        if (r.userRaw) {
+          try {
+            const u = JSON.parse(r.userRaw) as { email?: string };
+            if (typeof u.email === 'string' && u.email) email = u.email;
+          } catch {
+            /* ignore */
+          }
+        }
+        if (!email) email = emailFromJwt(r.token) ?? undefined;
+        const finalEmail = email ?? 'user';
+        await setStoredAuth(r.token, finalEmail);
+        return { token: r.token, email: finalEmail };
+      } catch {
+        /* Tab inaccessible or restricted */
+      }
+    }
+  }
+  return null;
 }
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
@@ -197,8 +272,19 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, _sender, sendResponse) =>
   (async () => {
     switch (msg.type) {
       case 'CHECK_AUTH': {
-        const auth = await getStoredAuth();
+        let auth = await getStoredAuth();
+        if (!auth) auth = await trySyncAuthFromBrowserTabs();
         sendResponse({ type: 'AUTH_STATE', loggedIn: !!auth, email: auth?.email });
+        break;
+      }
+
+      case 'IMPORT_WEB_SESSION': {
+        const m = msg as MsgImportWebSession;
+        if (m.token) {
+          let email = m.email?.trim();
+          if (!email) email = emailFromJwt(m.token) ?? 'user';
+          await setStoredAuth(m.token, email);
+        }
         break;
       }
 
