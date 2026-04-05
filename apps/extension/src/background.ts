@@ -16,13 +16,19 @@ import type {
 } from './types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
+// Vite replaces import.meta.env.VITE_API_BASE at build time (see apps/extension/.env.example).
+// Runtime override: chrome.storage.local.api_base (set from extension service worker console only).
 
-const DEFAULT_API_BASE = 'https://api.veritasai.com/api';
+const BUILT_IN_API_BASE =
+  typeof import.meta.env.VITE_API_BASE === 'string' && import.meta.env.VITE_API_BASE.trim() !== ''
+    ? import.meta.env.VITE_API_BASE.trim()
+    : 'https://api.veritasai.com/api';
 
 async function getApiBase(): Promise<string> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['api_base'], (result) => {
-      resolve((result.api_base as string | undefined) ?? DEFAULT_API_BASE);
+      const stored = result.api_base as string | undefined;
+      resolve(stored?.trim() || BUILT_IN_API_BASE);
     });
   });
 }
