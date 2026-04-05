@@ -60,6 +60,12 @@ export interface ModelEvidence {
         assessment: 'LIKELY_AI' | 'LIKELY_REAL' | 'UNCERTAIN';
         confidence_pct: number;
         proof: string;
+        /** What real-world event/person/place Grok identified in the image */
+        event_description?: string | null;
+        /** Whether Grok's live web search confirmed the depicted event happened */
+        event_verified?: 'CONFIRMED' | 'DISPUTED' | 'UNVERIFIABLE' | null;
+        /** News/web sources Grok cited when verifying the event */
+        event_sources?: string[];
       }
     | { ran: false; skip_reason: string };
   /** Present for image analyses only. */
@@ -93,6 +99,22 @@ export interface ModelEvidence {
         score: number;
         verdict: Verdict;
         sentence_count: number;
+      }
+    | { ran: false; skip_reason: string };
+  /**
+   * Present for video analyses — SightEngine video genai model results.
+   * Populated on the visual path (after audio check passes).
+   */
+  sightengine_video?:
+    | {
+        ran: true;
+        /** Per-frame AI-generated scores (0–1). */
+        frame_scores: number[];
+        /** Maximum per-frame score — headline threat signal. */
+        max_score: number;
+        /** Mean score across all analyzed frames. */
+        mean_score: number;
+        verdict: Verdict;
       }
     | { ran: false; skip_reason: string };
 }

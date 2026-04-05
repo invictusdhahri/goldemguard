@@ -24,18 +24,31 @@ import '../loadEnv';
 import { Worker, type Job, UnrecoverableError } from 'bullmq';
 import IORedis from 'ioredis';
 import { getSupabaseServiceRole, storageObjectPathFromFileUrl } from '../services/supabase';
-import { analyzeImage, unsupportedMediaResult, type SightEngineResult } from '../services/sightengineService';
+import { analyzeImage, analyzeVideo, unsupportedMediaResult, type SightEngineResult } from '../services/sightengineService';
 import { analyzeAudio } from '../services/resembleService';
 import { callGrok, isValidGrokResult, type GrokResult } from '../services/grokService';
-import { callClaude } from '../services/claudeService';
+import { callClaude, callClaudeForVideo } from '../services/claudeService';
 import { analyzeSaplingText } from '../services/saplingService';
 import { extractText } from '../utils/extractText';
+import { getVideoDuration, extractAudioSegment, extractKeyFrames, FfmpegNotFoundError } from '../utils/videoUtils';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAX_FILE_BYTES    = 100 * 1024 * 1024; // 100 MB
 const API_TIMEOUT_MS    = 30_000;            // abort single SightEngine request after 30s
 const API_MAX_ATTEMPTS  = 3;                 // internal retry counter (separate from BullMQ retries)
+
+// Video-specific limits (configurable via env)
+function getVideoMaxDurationSeconds(): number {
+  const raw = process.env.VIDEO_MAX_DURATION_SECONDS;
+  const n   = raw != null && raw !== '' ? Number.parseInt(raw, 10) : 10;
+  return Number.isNaN(n) || n < 1 ? 10 : n;
+}
+function getVideoAudioSampleSeconds(): number {
+  const raw = process.env.VIDEO_AUDIO_SAMPLE_SECONDS;
+  const n   = raw != null && raw !== '' ? Number.parseInt(raw, 10) : 5;
+  return Number.isNaN(n) || n < 1 ? 5 : Math.min(n, 10);
+}
 
 // ─── Type definitions ─────────────────────────────────────────────────────────
 
@@ -411,16 +424,313 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
         },
       };
     } else if (mediaType === 'video') {
-      // ── Video: not yet supported ───────────────────────────
-      const sightEngineResult = await callSightEngine(mediaType, buffer, filename, jobId);
-      mlResult = {
-        ...sightEngineResult,
-        model_evidence: {
-          sapling: { ran: false, skip_reason: 'Text detection only applies to documents' },
-          grok:    { ran: false, skip_reason: 'Vision models only run on images' },
-          claude:  { ran: false, skip_reason: 'Claude synthesis runs after image vision pipeline' },
-        },
-      };
+      // ── Video: audio-first short circuit, then SightEngine video + Grok + Claude ──
+
+      // Phase 1: Duration check
+      log('info', jobId, '🎬 Video detected — checking duration');
+      let videoDuration: number;
+      try {
+        videoDuration = await getVideoDuration(buffer);
+      } catch (err) {
+        if (err instanceof FfmpegNotFoundError) {
+          log('error', jobId, `ffmpeg not installed — ${err.message}`);
+          await setJobStatus(jobId, 'failed');
+          throw new UnrecoverableError(err.message);
+        }
+        log('error', jobId, `ffprobe failed: ${(err as Error).message}`);
+        await setJobStatus(jobId, 'failed');
+        throw new UnrecoverableError(`Cannot read video duration: ${(err as Error).message}`);
+      }
+
+      const maxDuration = getVideoMaxDurationSeconds();
+      if (videoDuration > maxDuration) {
+        const msg = `Video duration ${videoDuration.toFixed(1)}s exceeds maximum of ${maxDuration}s`;
+        log('error', jobId, msg);
+        await setJobStatus(jobId, 'failed');
+        throw new UnrecoverableError(msg);
+      }
+      log('info', jobId, `⏱  Video duration: ${videoDuration.toFixed(2)}s (limit ${maxDuration}s)`);
+
+      // Phase 2: Extract audio + Resemble AI deepfake check (short-circuit if AI)
+      const audioSampleSec = getVideoAudioSampleSeconds();
+      log('info', jobId, `🎙️  Extracting first ${audioSampleSec}s of audio for deepfake check`);
+
+      let resembleRan = false;
+      let resembleResult: Awaited<ReturnType<typeof analyzeAudio>> | null = null;
+
+      try {
+        const audioBuffer = await extractAudioSegment(buffer, audioSampleSec);
+        resembleResult    = await analyzeAudio(audioBuffer, 'extracted_audio.wav');
+        resembleRan       = true;
+        log('info', jobId,
+          `🎤 Resemble AI done — label=${resembleResult.resemble_raw.label} ` +
+          `score=${(resembleResult.confidence * 100).toFixed(1)}%`,
+        );
+      } catch (err) {
+        // If audio extraction fails (e.g. silent/video-only), log a warning and proceed
+        log('warn', jobId, `Audio extraction/Resemble skipped: ${(err as Error).message}`);
+      }
+
+      const resembleEvidence = resembleResult && resembleRan
+        ? {
+            ran:              true as const,
+            sample_seconds:   resembleResult.resemble_raw.sample_seconds,
+            label:            resembleResult.resemble_raw.label as 'fake' | 'real' | 'uncertain',
+            aggregated_score: parseFloat(resembleResult.resemble_raw.aggregated_score),
+            chunk_scores:     resembleResult.resemble_raw.chunk_scores,
+            consistency:      resembleResult.resemble_raw.consistency,
+            source_tracing:   resembleResult.resemble_raw.source_tracing,
+            intelligence:     resembleResult.resemble_raw.intelligence,
+          }
+        : { ran: false as const, skip_reason: 'Audio extraction failed or video has no audio stream' };
+
+      // Short-circuit: AI audio means the whole video is AI-generated
+      if (resembleResult && resembleResult.verdict === 'AI_GENERATED') {
+        log('info', jobId, '🚨 Resemble AI flagged audio as AI-generated — short-circuit verdict: AI_GENERATED');
+        mlResult = {
+          verdict:        'AI_GENERATED',
+          confidence:     resembleResult.confidence,
+          explanation:    `Audio deepfake detected: ${resembleResult.explanation}`,
+          model_scores:   { resemble_detect: resembleResult.confidence },
+          models_run:     ['resemble_detect'],
+          models_skipped: ['sightengine_genai_video', 'grok_grok4fast', 'claude_haiku'],
+          top_signals:    resembleResult.top_signals,
+          caveat:         resembleResult.caveat,
+          model_evidence: {
+            resemble:         resembleEvidence,
+            sightengine_video: { ran: false, skip_reason: 'Audio flagged as AI-generated — visual analysis skipped' },
+            grok:              { ran: false, skip_reason: 'Audio flagged as AI-generated — visual analysis skipped' },
+            claude:            { ran: false, skip_reason: 'Audio flagged as AI-generated — visual analysis skipped' },
+          },
+        };
+      } else {
+        // Phase 3: Visual pipeline — SightEngine video API + Grok (parallel), then Claude
+        log('info', jobId, '🔍 Proceeding to visual analysis (SightEngine video + Grok + Claude)');
+
+        // Extract key frames for Grok + Claude
+        let keyFrames: Buffer[] = [];
+        try {
+          keyFrames = await extractKeyFrames(buffer, 3, videoDuration);
+          log('info', jobId, `🖼  Extracted ${keyFrames.length} key frame(s) for Grok/Claude`);
+        } catch (err) {
+          log('warn', jobId, `Frame extraction failed: ${(err as Error).message}`);
+        }
+        const representativeFrame = keyFrames.length > 0
+          ? keyFrames[Math.floor(keyFrames.length / 2)]  // middle frame
+          : null;
+
+        // SightEngine video + Grok in parallel
+        log('info', jobId, '🔬 SightEngine video API + Grok running in parallel');
+
+        // ── SightEngine: try video API, fall back to image analysis on frame ──
+        type SeVideoOutcome =
+          | { mode: 'video'; result: Awaited<ReturnType<typeof analyzeVideo>> }
+          | { mode: 'frame'; result: Awaited<ReturnType<typeof analyzeImage>>; skipReason: string };
+
+        const [seOutcome, grokOutcome] = await Promise.all([
+          // SightEngine (video API with fallback to frame image)
+          (async (): Promise<SeVideoOutcome> => {
+            let lastErr: Error | null = null;
+            for (let attempt = 0; attempt < API_MAX_ATTEMPTS; attempt++) {
+              if (attempt > 0) {
+                const delay = Math.min(Math.pow(2, attempt) * 1_000, 30_000);
+                log('warn', jobId, `SightEngine video retry ${attempt + 1}/${API_MAX_ATTEMPTS} in ${delay}ms`);
+                await sleep(delay);
+              }
+              const controller = new AbortController();
+              const timer      = setTimeout(() => controller.abort(), API_TIMEOUT_MS * 3);
+              try {
+                const r = await analyzeVideo(buffer, filename, controller.signal);
+                clearTimeout(timer);
+                return { mode: 'video', result: r };
+              } catch (err) {
+                clearTimeout(timer);
+                if ((err as Error).message?.includes('Missing SIGHTENGINE')) {
+                  throw new UnrecoverableError((err as Error).message);
+                }
+                lastErr = err as Error;
+              }
+            }
+            // Video API exhausted — fall back to image analysis on representative frame
+            const skipReason = `SightEngine video API unavailable (${lastErr?.message ?? 'unknown'}); using frame image analysis instead.`;
+            log('warn', jobId, `⚠️  SightEngine video failed — falling back to frame image analysis: ${lastErr?.message}`);
+            if (representativeFrame) {
+              const controller = new AbortController();
+              const timer      = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+              try {
+                const r = await analyzeImage(representativeFrame, `${filename}_frame.jpg`, controller.signal);
+                clearTimeout(timer);
+                return { mode: 'frame', result: r, skipReason };
+              } catch {
+                clearTimeout(timer);
+              }
+            }
+            // Both video and fallback failed — return stub
+            return {
+              mode: 'frame',
+              result: {
+                verdict: 'UNCERTAIN' as const,
+                confidence: 0,
+                explanation: 'SightEngine video analysis unavailable and no representative frame could be analyzed.',
+                model_scores: {},
+                models_run: [],
+                models_skipped: ['sightengine_genai_video'],
+                top_signals: [],
+                caveat: 'Visual analysis could not run.',
+              },
+              skipReason,
+            };
+          })(),
+          // Grok on representative frame
+          representativeFrame
+            ? callGrok(representativeFrame, 'image/jpeg')
+            : Promise.resolve({ ok: false as const, reason: 'No frames could be extracted from the video' }),
+        ]);
+
+        // Normalise SE outcome into a common shape for the rest of the pipeline
+        const seIsVideo  = seOutcome.mode === 'video';
+        const seMaxScore = seIsVideo
+          ? (seOutcome.result as Awaited<ReturnType<typeof analyzeVideo>>).max_score
+          : seOutcome.result.confidence;
+        const seMeanScore = seIsVideo
+          ? (seOutcome.result as Awaited<ReturnType<typeof analyzeVideo>>).mean_score
+          : seOutcome.result.confidence;
+        const seFrameScores = seIsVideo
+          ? (seOutcome.result as Awaited<ReturnType<typeof analyzeVideo>>).frame_scores
+          : [seOutcome.result.confidence];
+        const seVerdict = seOutcome.result.verdict;
+
+        if (seIsVideo) {
+          log('info', jobId,
+            `📊 SightEngine video done — max=${(seMaxScore * 100).toFixed(1)}% ` +
+            `mean=${(seMeanScore * 100).toFixed(1)}% ` +
+            `frames=${seFrameScores.length} verdict=${seVerdict}`,
+          );
+        } else {
+          log('info', jobId,
+            `📊 SightEngine frame fallback done — score=${(seMaxScore * 100).toFixed(1)}% verdict=${seVerdict}`,
+          );
+        }
+
+        mlResult = { ...seOutcome.result };
+        mlResult.models_run     = Array.isArray(mlResult.models_run) ? mlResult.models_run : [];
+        mlResult.models_skipped = Array.isArray(mlResult.models_skipped) ? mlResult.models_skipped : [];
+
+        const grokResult =
+          grokOutcome.ok && isValidGrokResult(grokOutcome.data) ? grokOutcome.data : null;
+
+        if (grokResult) {
+          log('info', jobId,
+            `🤖 Grok result — assessment=${grokResult.assessment} confidence=${grokResult.confidence_pct}% ` +
+            `reasoning="${grokResult.reasoning}" ` +
+            `event="${grokResult.event_description ?? 'none'}" ` +
+            `event_verified=${grokResult.event_verified ?? 'null'} ` +
+            `sources=${grokResult.event_sources.length}`,
+          );
+          mlResult.model_scores = { ...mlResult.model_scores, grok_grok4fast: grokResult.confidence_pct / 100 };
+          mlResult.models_run   = [...mlResult.models_run, 'grok_grok4fast'];
+        } else {
+          const why = !grokOutcome.ok
+            ? grokOutcome.reason
+            : 'Grok payload invalid or empty';
+          log('warn', jobId, `⏭  Grok skipped — ${why}`);
+          mlResult.models_skipped = [...mlResult.models_skipped, 'grok_grok4fast'];
+        }
+
+        // Claude synthesis on representative frame
+        let claudeOutcome: Awaited<ReturnType<typeof callClaudeForVideo>> =
+          { ok: false, reason: 'No representative frame available for Claude' };
+
+        if (representativeFrame) {
+          claudeOutcome = await callClaudeForVideo(
+            representativeFrame,
+            'image/jpeg',
+            seMaxScore,
+            seMeanScore,
+            seFrameScores.length,
+            seVerdict,
+            grokResult,
+          );
+        }
+
+        if (claudeOutcome.ok) {
+          const llm    = claudeOutcome.data;
+          const proofN = (llm.proof_points ?? []).length;
+          log('info', jobId,
+            `🧠 Claude result — rate=${llm.confidence_pct}% verdict=${llm.verdict} proof_points=${proofN} ` +
+            `explanation="${(llm.explanation ?? '').slice(0, 120)}…" caveat=${llm.caveat ?? 'none'}`,
+          );
+          mlResult.model_scores = { ...mlResult.model_scores, claude_haiku: llm.confidence_pct / 100 };
+          mlResult.verdict      = llm.verdict;
+          mlResult.explanation  = llm.explanation;
+          mlResult.top_signals  = Array.isArray(llm.top_signals) ? llm.top_signals : [];
+          mlResult.caveat       = llm.caveat;
+          mlResult.models_run   = [...new Set([...mlResult.models_run, 'claude_haiku'])];
+        } else {
+          log('warn', jobId, `⏭  Claude skipped — ${claudeOutcome.reason}`);
+          mlResult.models_skipped = [...mlResult.models_skipped, 'claude_haiku'];
+        }
+
+        // Final verdict: SE score threshold → Grok → Claude → SE verdict
+        mlResult.verdict = resolveFinalVerdict(
+          seMaxScore,
+          seVerdict,
+          grokResult,
+          claudeOutcome.ok ? claudeOutcome.data.verdict : null,
+        );
+
+        mlResult.model_evidence = {
+          resemble: resembleEvidence,
+          sightengine_video: seIsVideo
+            ? {
+                ran:         true,
+                frame_scores: seFrameScores,
+                max_score:   seMaxScore,
+                mean_score:  seMeanScore,
+                verdict:     seVerdict,
+              }
+            : {
+                ran: false,
+                skip_reason: (seOutcome as { skipReason: string }).skipReason,
+              },
+          grok: grokResult
+            ? {
+                ran:               true,
+                assessment:        grokResult.assessment,
+                confidence_pct:    grokResult.confidence_pct,
+                proof:             grokResult.reasoning,
+                event_description: grokResult.event_description,
+                event_verified:    grokResult.event_verified,
+                event_sources:     grokResult.event_sources,
+              }
+            : {
+                ran: false,
+                skip_reason: !grokOutcome.ok ? grokOutcome.reason : 'Grok payload invalid or empty',
+              },
+          claude: claudeOutcome.ok
+            ? {
+                ran:            true,
+                confidence_pct: claudeOutcome.data.confidence_pct,
+                proof_points:   claudeOutcome.data.proof_points ?? [],
+              }
+            : { ran: false, skip_reason: claudeOutcome.reason },
+        };
+
+        // Blend confidence across video models
+        const videoScores: Record<string, number | null> = {
+          sightengine_genai_video: seMaxScore,
+          ...('grok_grok4fast' in mlResult.model_scores ? { grok_grok4fast: mlResult.model_scores.grok_grok4fast } : {}),
+          ...('claude_haiku' in mlResult.model_scores ? { claude_haiku: mlResult.model_scores.claude_haiku } : {}),
+        };
+        const blended = blendAiLikeness(videoScores);
+        if (blended != null) mlResult.confidence = blended;
+
+        // Add Resemble score if it ran
+        if (resembleResult && resembleRan) {
+          mlResult.model_scores = { ...mlResult.model_scores, resemble_detect: resembleResult.confidence };
+          mlResult.models_run   = [...new Set([...mlResult.models_run, 'resemble_detect'])];
+        }
+      }
     } else {
       const [sightEngineResult, grokOutcome] = await Promise.all([
         callSightEngine(mediaType, buffer, filename, jobId),
@@ -437,7 +747,10 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
       if (grokResult) {
         log('info', jobId,
           `🤖 Grok result — assessment=${grokResult.assessment} confidence=${grokResult.confidence_pct}% ` +
-          `reasoning="${grokResult.reasoning}"`,
+          `reasoning="${grokResult.reasoning}" ` +
+          `event="${grokResult.event_description ?? 'none'}" ` +
+          `event_verified=${grokResult.event_verified ?? 'null'} ` +
+          `sources=${grokResult.event_sources.length}`,
         );
         mlResult.model_scores   = { ...mlResult.model_scores, grok_grok4fast: grokResult.confidence_pct / 100 };
         mlResult.models_run     = [...mlResult.models_run, 'grok_grok4fast'];
@@ -493,10 +806,13 @@ async function processJob(job: Job<AnalysisJobPayload>): Promise<void> {
         },
         grok: grokResult
           ? {
-              ran:             true,
-              assessment:      grokResult.assessment,
-              confidence_pct:  grokResult.confidence_pct,
-              proof:           grokResult.reasoning,
+              ran:               true,
+              assessment:        grokResult.assessment,
+              confidence_pct:    grokResult.confidence_pct,
+              proof:             grokResult.reasoning,
+              event_description: grokResult.event_description,
+              event_verified:    grokResult.event_verified,
+              event_sources:     grokResult.event_sources,
             }
           : {
               ran: false,
@@ -616,9 +932,14 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Mean AI-likeness (0–1) across sightengine_genai, grok_grok4fast, claude_haiku when present. */
+/** Mean AI-likeness (0–1) across known model keys when present. */
 function blendAiLikeness(modelScores: Record<string, number | null>): number | null {
-  const keys = ['sightengine_genai', 'grok_grok4fast', 'claude_haiku'] as const;
+  const keys = [
+    'sightengine_genai',
+    'sightengine_genai_video',
+    'grok_grok4fast',
+    'claude_haiku',
+  ] as const;
   const parts: number[] = [];
   for (const k of keys) {
     const v = modelScores[k];

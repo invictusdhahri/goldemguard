@@ -16,6 +16,9 @@ import {
   Music,
   Radio,
   AudioLines,
+  Film,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { useJobStatus, useResult } from '@/hooks/useAnalysis';
 import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
@@ -36,15 +39,39 @@ function sightEngineRawScore(result: FinalResponse): number | undefined {
   return undefined;
 }
 
+function sightEngineVideoMaxScore(result: FinalResponse): number | undefined {
+  const s = result.model_scores?.sightengine_genai_video;
+  if (typeof s === 'number' && !Number.isNaN(s)) return s;
+  const ev = result.model_evidence?.sightengine_video;
+  if (ev && 'max_score' in ev && typeof ev.max_score === 'number') return ev.max_score;
+  return undefined;
+}
+
+type MediaKind = 'image' | 'audio' | 'video';
+
+function detectMediaKind(ev: ModelEvidence | undefined): MediaKind {
+  if (ev?.sightengine_video) return 'video';
+  if (ev?.resemble && 'ran' in ev.resemble && ev.resemble.ran) {
+    // Resemble ran without sightengine_video → standalone audio file
+    return 'audio';
+  }
+  return 'image';
+}
+
 /** Prefer stored verdict unless SightEngine score forces AI (covers stale `UNCERTAIN` rows). */
-function effectiveVerdict(result: FinalResponse, isAudio: boolean): Verdict {
-  if (isAudio) return result.verdict;
+function effectiveVerdict(result: FinalResponse, kind: MediaKind): Verdict {
+  if (kind === 'audio') return result.verdict;
+  if (kind === 'video') {
+    const vScore = sightEngineVideoMaxScore(result);
+    if (vScore !== undefined && vScore >= SE_AI_DISPLAY_THRESHOLD) return 'AI_GENERATED';
+    return result.verdict;
+  }
   const se = sightEngineRawScore(result);
   if (se !== undefined && se >= SE_AI_DISPLAY_THRESHOLD) return 'AI_GENERATED';
   return result.verdict;
 }
 
-function verdictPresentation(v: Verdict, isAudio: boolean): {
+function verdictPresentation(v: Verdict, kind: MediaKind): {
   headline: string;
   subtitle: string;
   tone: 'ai' | 'human' | 'uncertain';
@@ -53,25 +80,31 @@ function verdictPresentation(v: Verdict, isAudio: boolean): {
     case 'AI_GENERATED':
       return {
         headline: 'Likely AI-generated',
-        subtitle: isAudio
+        subtitle: kind === 'audio'
           ? 'This audio shows strong signals of synthetic or AI-generated speech.'
-          : 'The image shows strong signals of synthetic or AI-produced content.',
+          : kind === 'video'
+            ? 'This video shows strong signals of AI-generated or synthetic content.'
+            : 'The image shows strong signals of synthetic or AI-produced content.',
         tone: 'ai',
       };
     case 'HUMAN':
       return {
         headline: 'Likely authentic',
-        subtitle: isAudio
+        subtitle: kind === 'audio'
           ? 'This audio is consistent with real, human-recorded content.'
-          : 'The image is more consistent with real / human-created content.',
+          : kind === 'video'
+            ? 'This video is consistent with real, human-captured footage.'
+            : 'The image is more consistent with real / human-created content.',
         tone: 'human',
       };
     default:
       return {
         headline: 'Uncertain',
-        subtitle: isAudio
+        subtitle: kind === 'audio'
           ? 'The model could not confidently classify this audio.'
-          : 'The models could not confidently classify this image.',
+          : kind === 'video'
+            ? 'The models could not confidently classify this video.'
+            : 'The models could not confidently classify this image.',
         tone: 'uncertain',
       };
   }
@@ -216,13 +249,21 @@ export default function ResultPage() {
 
         {/* ── Full result ── */}
         {resultEnabled && result && (() => {
-          const ev       = result.model_evidence as ModelEvidence | undefined;
-          const isAudio  = !!(ev?.resemble && 'ran' in ev.resemble && ev.resemble.ran);
-          const resembleEv = (isAudio && ev?.resemble && 'ran' in ev.resemble && ev.resemble.ran)
+          const ev   = result.model_evidence as ModelEvidence | undefined;
+          const kind = detectMediaKind(ev);
+
+          const isAudio = kind === 'audio';
+          const isVideo = kind === 'video';
+
+          const resembleEv = ev?.resemble && 'ran' in ev.resemble && ev.resemble.ran
             ? ev.resemble
             : null;
 
-          const { headline, subtitle, tone } = verdictPresentation(effectiveVerdict(result, isAudio), isAudio);
+          const seVideoEv = ev?.sightengine_video && 'ran' in ev.sightengine_video && ev.sightengine_video.ran
+            ? ev.sightengine_video
+            : null;
+
+          const { headline, subtitle, tone } = verdictPresentation(effectiveVerdict(result, kind), kind);
           const Icon      = tone === 'ai' ? Sparkles : tone === 'human' ? CheckCircle2 : HelpCircle;
           const ring      = tone === 'ai'
             ? 'from-rose-500/30 to-fuchsia-500/20 border-rose-500/40'
@@ -238,6 +279,12 @@ export default function ResultPage() {
           const hasGrok     = result.models_run?.includes('grok_grok4fast');
           const hasClaude   = result.models_run?.includes('claude_haiku');
           const hasSightEngine = result.models_run?.includes('sightengine_genai');
+
+          // Video model scores
+          const seVideoScore   = result.model_scores?.sightengine_genai_video as number | undefined;
+          const hasSeVideo     = result.models_run?.includes('sightengine_genai_video');
+          const hasVideoGrok   = isVideo && hasGrok;
+          const hasVideoClaude = isVideo && hasClaude;
 
           return (
             <div className="space-y-5">
@@ -255,12 +302,18 @@ export default function ResultPage() {
                       Audio deepfake detection by Resemble AI
                     </div>
                   )}
+                  {isVideo && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-xs text-violet-400">
+                      <Film className="w-3 h-3" />
+                      Video AI detection · audio + visual analysis
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 mt-5">
                   <div className="rounded-xl bg-slate-800/40 border border-slate-700/80 p-4">
                     <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                      {isAudio ? 'Deepfake score' : 'AI-likeness score'}
+                      {isAudio ? 'Deepfake score' : isVideo ? 'AI-likeness score' : 'AI-likeness score'}
                     </p>
                     <p className="text-2xl font-semibold text-cyan-400 tabular-nums">
                       {(result.confidence * 100).toFixed(1)}%
@@ -280,7 +333,7 @@ export default function ResultPage() {
                 </div>
               </div>
 
-              {/* ── Audio model breakdown (Resemble AI) ── */}
+              {/* ── Audio model breakdown (Resemble AI — standalone audio files) ── */}
               {isAudio && resembleEv && (
                 <div className="glass-card rounded-2xl p-6 space-y-4">
                   <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
@@ -391,8 +444,207 @@ export default function ResultPage() {
                 </div>
               )}
 
+              {/* ── Video model breakdown ── */}
+              {isVideo && (
+                <div className="glass-card rounded-2xl p-6 space-y-4">
+                  <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                    Video analysis breakdown
+                  </h3>
+
+                  {/* Audio check card (always shown for video) */}
+                  <div className={`flex items-start gap-4 rounded-xl border p-4 ${
+                    resembleEv
+                      ? resembleEv.label === 'fake'
+                        ? 'bg-rose-500/5 border-rose-500/40'
+                        : 'bg-emerald-500/5 border-emerald-500/30'
+                      : 'bg-slate-800/20 border-slate-700/30'
+                  }`}>
+                    {resembleEv
+                      ? resembleEv.label === 'fake'
+                        ? <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                        : <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      : <AudioLines className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div>
+                          <span className="text-sm font-semibold text-slate-200">Audio check</span>
+                          <p className="text-[11px] text-slate-500 mt-0.5">by Resemble AI Detect</p>
+                        </div>
+                        {resembleEv ? (
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                            resembleEv.label === 'fake'
+                              ? 'bg-rose-500/15 text-rose-400'
+                              : resembleEv.label === 'real'
+                                ? 'bg-emerald-500/15 text-emerald-400'
+                                : 'bg-amber-500/15 text-amber-400'
+                          }`}>
+                            {resembleEv.label === 'fake'
+                              ? `AI-generated audio (${(resembleEv.aggregated_score * 100).toFixed(0)}%)`
+                              : resembleEv.label === 'real'
+                                ? 'Audio passed'
+                                : 'Uncertain'}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">not available</span>
+                        )}
+                      </div>
+                      {resembleEv && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {resembleEv.label === 'fake'
+                            ? 'AI-generated audio detected — full video flagged as AI-generated without visual analysis.'
+                            : resembleEv.label === 'real'
+                              ? `Audio appears authentic (score ${(resembleEv.aggregated_score * 100).toFixed(1)}%) — proceeding to visual analysis.`
+                              : `Ambiguous audio result (${(resembleEv.aggregated_score * 100).toFixed(1)}%) — visual analysis ran.`}
+                        </p>
+                      )}
+                      {!resembleEv && ev?.resemble && 'skip_reason' in ev.resemble && (
+                        <p className="text-xs text-slate-500 mt-1">{ev.resemble.skip_reason}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SightEngine video */}
+                  <div className={`flex items-start gap-4 rounded-xl border p-4 ${
+                    hasSeVideo
+                      ? 'bg-slate-800/40 border-slate-700/60'
+                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                  }`}>
+                    <Eye className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-slate-200">SightEngine video genai</span>
+                        {seVideoScore !== undefined ? (
+                          <span className={`text-sm font-bold tabular-nums ${scoreBadge(seVideoScore).color}`}>
+                            {(seVideoScore * 100).toFixed(1)}% — {scoreBadge(seVideoScore).label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">not run</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {hasSeVideo
+                          ? `Dedicated AI-video detection · analyzed ${seVideoEv ? seVideoEv.frame_scores.length : '?'} frame(s) · score shown is max across all frames`
+                          : (ev?.sightengine_video && 'skip_reason' in ev.sightengine_video
+                            ? ev.sightengine_video.skip_reason
+                            : 'Did not run')}
+                      </p>
+                      {seVideoEv && seVideoEv.frame_scores.length > 0 && (
+                        <div className="mt-3 border-t border-slate-700/60 pt-3">
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                              Per-frame scores ({seVideoEv.frame_scores.length} frame{seVideoEv.frame_scores.length !== 1 ? 's' : ''})
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              Mean: <span className="text-slate-300 tabular-nums">{(seVideoEv.mean_score * 100).toFixed(1)}%</span>
+                            </p>
+                          </div>
+                          <div className="flex items-end gap-1 h-10">
+                            {seVideoEv.frame_scores.map((s: number, i: number) => {
+                              const pct = Math.round(s * 100);
+                              const barColor = s >= 0.75 ? 'bg-rose-500' : s <= 0.35 ? 'bg-emerald-500' : 'bg-amber-400';
+                              return (
+                                <div
+                                  key={i}
+                                  title={`Frame ${i + 1}: ${pct}%`}
+                                  className={`rounded-sm flex-1 min-w-[4px] ${barColor} opacity-80 hover:opacity-100 transition-opacity`}
+                                  style={{ height: `${Math.max(4, pct)}%` }}
+                                />
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-[10px] text-slate-600">Frame 1</span>
+                            <span className="text-[10px] text-slate-600">Frame {seVideoEv.frame_scores.length}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* xAI Grok (video) */}
+                  <div className={`flex items-start gap-4 rounded-xl border p-4 ${
+                    hasVideoGrok
+                      ? 'bg-slate-800/40 border-slate-700/60'
+                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                  }`}>
+                    <Zap className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-slate-200">xAI Grok 4.1 Fast</span>
+                        {grokScore !== undefined ? (
+                          <span className={`text-sm font-bold tabular-nums ${scoreBadge(grokScore).color}`}>
+                            {(grokScore * 100).toFixed(1)}% — {scoreBadge(grokScore).label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">not run</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {hasVideoGrok
+                          ? 'Vision LLM — analyzed a representative frame extracted from the video'
+                          : (ev?.grok && 'skip_reason' in ev.grok
+                            ? ev.grok.skip_reason
+                            : 'Did not run — check server logs or apps/backend/.env')}
+                      </p>
+                      {ev?.grok && 'proof' in ev.grok && ev.grok.proof && (
+                        <div className="mt-2 border-t border-slate-700/60 pt-2 space-y-1">
+                          <p className="text-[11px] uppercase tracking-wide text-violet-400/90">
+                            Grok assessment: {ev.grok.assessment.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-xs text-slate-400 leading-relaxed">
+                            <span className="text-slate-500">Evidence: </span>
+                            {ev.grok.proof}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Claude Haiku (video) */}
+                  <div className={`flex items-start gap-4 rounded-xl border p-4 ${
+                    hasVideoClaude
+                      ? 'bg-slate-800/40 border-slate-700/60'
+                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                  }`}>
+                    <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-slate-200">Anthropic Claude Haiku</span>
+                        {hasVideoClaude && claudeScore !== undefined ? (
+                          <span className={`text-sm font-bold tabular-nums ${scoreBadge(claudeScore).color}`}>
+                            {(claudeScore * 100).toFixed(1)}% — {scoreBadge(claudeScore).label}
+                          </span>
+                        ) : hasVideoClaude ? (
+                          <span className="text-xs text-fuchsia-400 font-medium">Reasoning synthesis</span>
+                        ) : (
+                          <span className="text-xs text-slate-600">not run</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {hasVideoClaude
+                          ? 'Vision rate (frame) + reasoning synthesis — proof bullets explaining why the video was flagged'
+                          : (ev?.claude && 'skip_reason' in ev.claude
+                            ? ev.claude.skip_reason
+                            : 'Did not run — check apps/backend/.env')}
+                      </p>
+                      {ev?.claude && 'proof_points' in ev.claude && ev.claude.proof_points.length > 0 && (
+                        <ul className="mt-2 border-t border-slate-700/60 pt-2 space-y-1.5">
+                          {ev.claude.proof_points.map((line: string, i: number) => (
+                            <li key={i} className="text-xs text-slate-400 leading-relaxed flex gap-2">
+                              <span className="text-fuchsia-500 shrink-0">{i + 1}.</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ── Image model breakdown (SightEngine / Grok / Claude) ── */}
-              {!isAudio && (hasSightEngine || hasGrok || hasClaude || ev?.sightengine) && (
+              {!isAudio && !isVideo && (hasSightEngine || hasGrok || hasClaude || ev?.sightengine) && (
                 <div className="glass-card rounded-2xl p-6 space-y-4">
                   <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
                     Model breakdown
@@ -508,8 +760,11 @@ export default function ResultPage() {
                 <div>
                   <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
                     Explanation
-                    {!isAudio && hasClaude && (
+                    {!isAudio && !isVideo && hasClaude && (
                       <span className="ml-2 normal-case text-fuchsia-500/70">by Claude Haiku</span>
+                    )}
+                    {isVideo && hasClaude && (
+                      <span className="ml-2 normal-case text-fuchsia-500/70">by Claude Haiku (frame analysis)</span>
                     )}
                     {isAudio && (
                       <span className="ml-2 normal-case text-cyan-500/70">by Resemble AI</span>
