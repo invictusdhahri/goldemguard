@@ -45,10 +45,22 @@ historyRouter.get('/', requireAuth, async (req: AuthRequest, res) => {
     return;
   }
 
-  const items = (jobs ?? []).map((job) => ({
-    ...job,
-    result: Array.isArray(job.results) ? job.results[0] ?? null : job.results,
-    results: undefined,
+  const items = await Promise.all((jobs ?? []).map(async (job) => {
+    let signedUrl = job.file_url;
+    if (signedUrl && signedUrl.includes('/public/uploads/')) {
+      const path = signedUrl.split('/public/uploads/')[1];
+      if (path) {
+        const { data } = await db.storage.from('uploads').createSignedUrl(path, 60 * 60); // 1 hour
+        if (data?.signedUrl) signedUrl = data.signedUrl;
+      }
+    }
+
+    return {
+      ...job,
+      file_url: signedUrl,
+      result: Array.isArray(job.results) ? job.results[0] ?? null : job.results,
+      results: undefined,
+    };
   }));
 
   res.json({ items, limit, offset });

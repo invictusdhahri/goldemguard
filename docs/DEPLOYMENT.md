@@ -313,7 +313,7 @@ uvicorn app.main:app --reload --port 8000 --reload-dir app
 
 | Service | Port |
 |---------|------|
-| Frontend | 3000 |
+| Frontend | 3001 |
 | Backend | 4000 |
 | ML Service | 8000 |
 | Redis | 6379 |

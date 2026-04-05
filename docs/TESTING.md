@@ -120,8 +120,8 @@ To exercise uploads and jobs the same way production does:
 2. **Supabase** project and **`apps/backend/.env`** filled (see [DEPLOYMENT.md](DEPLOYMENT.md) and `apps/backend/.env.example`).
 3. Set **`ML_SERVICE_URL=http://localhost:8000`** in `apps/backend/.env`.
 4. Terminal A — ML: `cd services/ml && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 --reload-dir app`
-5. Terminal B — monorepo: from repo root, `pnpm dev` (frontend ~3000, backend ~4000).
-6. Open **http://localhost:3000**, register/login, upload, and run analysis; poll status until the job completes.
+5. Terminal B — monorepo: from repo root, `pnpm dev` (frontend ~3001, backend ~4000).
+6. Open **http://localhost:3001**, register/login, upload, and run analysis; poll status until the job completes.
 
 If the backend cannot reach the ML URL or Redis, jobs may stay pending or fail — check backend logs and `REDIS_URL`.
 

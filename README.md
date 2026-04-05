@@ -109,7 +109,7 @@ cp apps/frontend/.env.example apps/frontend/.env.local
 pnpm dev
 ```
 
-This starts the frontend on `http://localhost:3000` and the backend on `http://localhost:4000`.
+This starts the frontend on `http://localhost:3001` and the backend on `http://localhost:4000`.
 
 For the ML service:
 

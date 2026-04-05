@@ -2,22 +2,22 @@
  * TEST CURL COMMANDS:
  * 
  * 1. Register test:
- * curl -X POST http://localhost:3000/api/auth/register \
+ * curl -X POST http://localhost:3001/api/auth/register \
  *   -H "Content-Type: application/json" \
  *   -d '{"email": "test@example.com", "password": "password123"}'
  * 
  * 2. Login test:
- * curl -X POST http://localhost:3000/api/auth/login \
+ * curl -X POST http://localhost:3001/api/auth/login \
  *   -H "Content-Type: application/json" \
  *   -d '{"email": "test@example.com", "password": "password123"}'
  * 
  * 3. Invalid email test:
- * curl -X POST http://localhost:3000/api/auth/register \
+ * curl -X POST http://localhost:3001/api/auth/register \
  *   -H "Content-Type: application/json" \
  *   -d '{"email": "invalid-email", "password": "password123"}'
  * 
  * 4. Short password test:
- * curl -X POST http://localhost:3000/api/auth/login \
+ * curl -X POST http://localhost:3001/api/auth/login \
  *   -H "Content-Type: application/json" \
  *   -d '{"email": "test@example.com", "password": "123"}'
  */
