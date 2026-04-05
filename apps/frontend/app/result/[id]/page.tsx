@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -26,6 +26,7 @@ import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun';
+import { MinecraftVerdictBurst } from '@/components/effects/MinecraftVerdictBurst';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Aligns with backend `SE_AI_SCORE_THRESHOLD`: strong SightEngine AI-likeness → AI headline. */
@@ -167,6 +168,16 @@ export default function ResultPage() {
   const [jobProgress] = useFakeAnalysisProgress(loadingAnalysis);
   const funLoadingMessage = useRotatingLoadingMessage(loadingAnalysis);
 
+  const [verdictBurstKey, setVerdictBurstKey] = useState(0);
+  const verdictBurstJobRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!jobId || !result || loadingAnalysis) return;
+    if (verdictBurstJobRef.current === jobId) return;
+    verdictBurstJobRef.current = jobId;
+    setVerdictBurstKey((k) => k + 1);
+  }, [jobId, result, loadingAnalysis]);
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -299,24 +310,32 @@ export default function ResultPage() {
             <div className="space-y-5">
               {/* ── Verdict card ── */}
               <div className="liquid-glass-card rounded-2xl p-8">
-                <div className={`rounded-2xl border bg-gradient-to-br p-8 text-center ${ring}`}>
-                  <div className="flex justify-center mb-4">
-                    <Icon className={`w-16 h-16 ${iconColor}`} strokeWidth={1.25} />
+                <div className={`relative overflow-visible rounded-2xl border bg-gradient-to-br p-8 text-center ${ring}`}>
+                  {tone === 'human' && (
+                    <MinecraftVerdictBurst variant="positive" burstKey={verdictBurstKey} />
+                  )}
+                  {tone === 'ai' && (
+                    <MinecraftVerdictBurst variant="negative" burstKey={verdictBurstKey} />
+                  )}
+                  <div className="relative z-20">
+                    <div className="flex justify-center mb-4">
+                      <Icon className={`w-16 h-16 ${iconColor}`} strokeWidth={1.25} />
+                    </div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">{headline}</h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed max-w-md mx-auto">{subtitle}</p>
+                    {isAudio && (
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan">
+                        <Music className="w-3 h-3" />
+                        Audio deepfake detection by Resemble AI
+                      </div>
+                    )}
+                    {isVideo && (
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-xs text-violet-400">
+                        <Film className="w-3 h-3" />
+                        Video AI detection · audio + visual analysis
+                      </div>
+                    )}
                   </div>
-                  <h2 className="text-3xl font-bold text-foreground mb-2">{headline}</h2>
-                  <p className="text-muted-foreground text-sm leading-relaxed max-w-md mx-auto">{subtitle}</p>
-                  {isAudio && (
-                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan">
-                      <Music className="w-3 h-3" />
-                      Audio deepfake detection by Resemble AI
-                    </div>
-                  )}
-                  {isVideo && (
-                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-xs text-violet-400">
-                      <Film className="w-3 h-3" />
-                      Video AI detection · audio + visual analysis
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 mt-5">

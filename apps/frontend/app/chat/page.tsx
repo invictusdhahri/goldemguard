@@ -29,6 +29,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun'
 import { useTrialCredits } from '@/components/credits/CreditsProvider'
+import { MinecraftVerdictBurst } from '@/components/effects/MinecraftVerdictBurst'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,7 @@ export default function ChatPage() {
   const [analyzing, setAnalyzing]   = useState(false)
   const [error, setError]           = useState('')
   const [result, setResult]         = useState<AnalysisResponse | null>(null)
+  const [verdictBurstKey, setVerdictBurstKey] = useState(0)
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null)
   const fileInputRef                = useRef<HTMLInputElement>(null)
 
@@ -352,6 +354,7 @@ export default function ChatPage() {
 
       const data: AnalysisResponse = await res.json()
       setResult(data)
+      setVerdictBurstKey((k) => k + 1)
       void refreshCredits()
       setAnalyzeProgress(100)
       await new Promise((r) => setTimeout(r, 420))
@@ -611,7 +614,7 @@ export default function ChatPage() {
 
             {/* Top summary: FAKE | REAL | UNCLEAR */}
             <div
-              className={`rounded-2xl p-6 sm:p-8 text-center space-y-3 border ${
+              className={`relative overflow-visible rounded-2xl p-6 sm:p-8 text-center space-y-3 border ${
                 overall.headline === 'FAKE'
                   ? 'border-ai/35 bg-ai/8'
                   : overall.headline === 'REAL'
@@ -619,23 +622,31 @@ export default function ChatPage() {
                     : 'border-warn/35 bg-warn/8'
               }`}
             >
-              <p
-                className="text-4xl sm:text-5xl font-black tracking-tight"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  color:
-                    overall.headline === 'FAKE'
-                      ? '#fb7185'
-                      : overall.headline === 'REAL'
-                        ? '#34d399'
-                        : '#fbbf24',
-                }}
-              >
-                {overall.headline === 'FAKE' ? 'Fake' : overall.headline === 'REAL' ? 'Real' : 'Unclear'}
-              </p>
-              <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                {overall.summary}
-              </p>
+              {overall.headline === 'REAL' && (
+                <MinecraftVerdictBurst variant="positive" burstKey={verdictBurstKey} />
+              )}
+              {overall.headline === 'FAKE' && (
+                <MinecraftVerdictBurst variant="negative" burstKey={verdictBurstKey} />
+              )}
+              <div className="relative z-20 space-y-3">
+                <p
+                  className="text-4xl sm:text-5xl font-black tracking-tight"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    color:
+                      overall.headline === 'FAKE'
+                        ? '#fb7185'
+                        : overall.headline === 'REAL'
+                          ? '#34d399'
+                          : '#fbbf24',
+                  }}
+                >
+                  {overall.headline === 'FAKE' ? 'Fake' : overall.headline === 'REAL' ? 'Real' : 'Unclear'}
+                </p>
+                <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                  {overall.summary}
+                </p>
+              </div>
             </div>
 
             {/* Critical: AI-generated */}
