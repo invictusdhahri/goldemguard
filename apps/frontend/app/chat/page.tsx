@@ -237,6 +237,7 @@ export default function ChatPage() {
   const [analyzing, setAnalyzing]   = useState(false)
   const [error, setError]           = useState('')
   const [result, setResult]         = useState<AnalysisResponse | null>(null)
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null)
   const fileInputRef                = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -244,6 +245,19 @@ export default function ChatPage() {
       router.push('/login')
     }
   }, [authLoading, user, router])
+
+  /** Local preview for selected image/video (blob URL; revoked when file changes or unmounts). */
+  useEffect(() => {
+    if (!file) {
+      setMediaPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setMediaPreviewUrl(url)
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [file])
 
   const overall = useMemo(
     () => (result ? deriveOverallSummary(result) : null),
@@ -415,28 +429,52 @@ export default function ChatPage() {
 
               {file ? (
                 <div
-                  className="relative rounded-xl px-5 py-4 flex items-center gap-4"
+                  className="relative rounded-xl overflow-hidden"
                   style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)' }}
                 >
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: fileIsImage ? 'rgba(0,212,255,0.1)' : 'rgba(139,92,246,0.1)' }}>
-                    {fileIsImage
-                      ? <ImageIcon className="w-5 h-5 text-cyan" />
-                      : <Video className="w-5 h-5 text-purple-400" />
-                    }
+                  {file && !mediaPreviewUrl && (
+                    <div className="flex items-center justify-center min-h-[140px] bg-black/30">
+                      <Loader2 className="w-7 h-7 text-cyan animate-spin" aria-hidden />
+                    </div>
+                  )}
+                  {mediaPreviewUrl && fileIsImage && (
+                    <div className="relative w-full bg-black/40 flex items-center justify-center min-h-[140px] max-h-[min(56vh,360px)]">
+                      {/* Blob URLs: use native img (next/image does not apply to object URLs). */}
+                      <img
+                        src={mediaPreviewUrl}
+                        alt={file.name ? `Preview: ${file.name}` : 'Selected image preview'}
+                        className="w-full h-full max-h-[min(56vh,360px)] object-contain"
+                      />
+                    </div>
+                  )}
+                  {mediaPreviewUrl && fileIsVideo && (
+                    <div className="relative w-full bg-black/50 flex items-center justify-center">
+                      <video
+                        src={mediaPreviewUrl}
+                        controls
+                        playsInline
+                        muted
+                        className="w-full max-h-[min(56vh,360px)] object-contain"
+                        preload="metadata"
+                      />
+                    </div>
+                  )}
+                  <div className="px-4 py-3 flex items-center gap-3 border-t border-white/5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {fileIsImage ? 'Image' : 'Video'} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setFile(null); setError('') }}
+                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+                      aria-label="Remove file"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {fileIsImage ? 'Image' : 'Video'} · {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { setFile(null); setError('') }}
-                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
-                  >
-                    <X size={14} />
-                  </button>
                 </div>
               ) : (
                 <div
