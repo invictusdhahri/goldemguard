@@ -2,6 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import { ImageIcon, Film, Mic, FileText, BarChart3, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 const FEATURES = [
   {
@@ -13,10 +15,9 @@ const FEATURES = [
     description:
       "Google's SigLIP model analyzes semantic embeddings and GAN fingerprints to distinguish AI-generated images from authentic photography.",
     tag: "Computer Vision",
-    tagColor: "#00d4ff",
-    col: "col-span-2",
-    row: "row-span-1",
+    col: "md:col-span-2",
     accent: "#00d4ff",
+    badgeVariant: "cyan" as const,
   },
   {
     id: "audio",
@@ -26,10 +27,9 @@ const FEATURES = [
     accuracy: "91.2%",
     description: "Anti-spoofing graph attention network trained on voice synthesis artifacts.",
     tag: "Signal Analysis",
-    tagColor: "#8b5cf6",
-    col: "col-span-1",
-    row: "row-span-1",
+    col: "md:col-span-1",
     accent: "#8b5cf6",
+    badgeVariant: "purple" as const,
   },
   {
     id: "stats",
@@ -39,10 +39,9 @@ const FEATURES = [
     accuracy: null,
     description: "Real-time confidence scoring with per-region attribution maps.",
     tag: "Explainability",
-    tagColor: "#10b981",
-    col: "col-span-1",
-    row: "row-span-1",
+    col: "md:col-span-1",
     accent: "#10b981",
+    badgeVariant: "verified" as const,
     isSmall: true,
   },
   {
@@ -53,10 +52,9 @@ const FEATURES = [
     accuracy: "89.7%",
     description: "Temporal behavioral analysis across frames detects deepfakes that fool single-frame classifiers.",
     tag: "Temporal Analysis",
-    tagColor: "#f59e0b",
-    col: "col-span-1",
-    row: "row-span-1",
+    col: "md:col-span-1",
     accent: "#f59e0b",
+    badgeVariant: "warning" as const,
   },
   {
     id: "docs",
@@ -67,10 +65,9 @@ const FEATURES = [
     description:
       "Dual-model ensemble scores burstiness and perplexity patterns to identify LLM-generated text across all major AI writers.",
     tag: "NLP Analysis",
-    tagColor: "#00d4ff",
-    col: "col-span-2",
-    row: "row-span-1",
+    col: "md:col-span-2",
     accent: "#00d4ff",
+    badgeVariant: "cyan" as const,
   },
   {
     id: "privacy",
@@ -80,10 +77,9 @@ const FEATURES = [
     accuracy: null,
     description: "Files are analyzed in-memory and never stored. Enterprise-grade privacy by default.",
     tag: "Privacy",
-    tagColor: "#10b981",
-    col: "col-span-1",
-    row: "row-span-1",
+    col: "md:col-span-1",
     accent: "#10b981",
+    badgeVariant: "verified" as const,
     isSmall: true,
   },
 ];
@@ -102,7 +98,7 @@ function AccuracyBar({ value, color }: { value: number; color: string }) {
   }, [value]);
 
   return (
-    <div ref={ref} className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+    <div ref={ref} className="h-1 rounded-full overflow-hidden bg-secondary">
       <div
         className="h-full rounded-full"
         style={{
@@ -121,11 +117,12 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
-      className={`glass-card rounded-2xl p-6 flex flex-col gap-4 cursor-default ${feature.col} ${feature.row}`}
+    <Card
+      className={`p-6 flex flex-col gap-4 cursor-default ${feature.col} backdrop-blur-sm`}
       style={{
         minHeight: feature.isSmall ? "160px" : "auto",
         transitionDelay: `${index * 60}ms`,
+        background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)",
         borderColor: hovered ? `${feature.accent}33` : undefined,
         boxShadow: hovered ? `0 0 40px ${feature.accent}0a, inset 0 1px 0 ${feature.accent}15` : undefined,
       }}
@@ -134,48 +131,37 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
     >
       <div className="flex items-start justify-between gap-3">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300"
           style={{
             background: `${feature.accent}15`,
             border: `1px solid ${feature.accent}25`,
-            transition: "all 0.3s ease",
             boxShadow: hovered ? `0 0 16px ${feature.accent}30` : "none",
           }}
         >
           <Icon size={18} style={{ color: feature.accent }} />
         </div>
 
-        <div
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
-          style={{
-            background: `${feature.accent}10`,
-            border: `1px solid ${feature.accent}20`,
-            color: feature.accent,
-          }}
-        >
+        <Badge variant={feature.badgeVariant} className="text-[11px]">
           {feature.tag}
-        </div>
+        </Badge>
       </div>
 
       <div className="flex flex-col gap-1.5 flex-1">
         <div className="flex items-center gap-2">
           <h3
-            className="font-semibold text-[15px]"
-            style={{ color: "#e2e8f0", fontFamily: "var(--font-display)" }}
+            className="font-semibold text-[15px] text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {feature.title}
           </h3>
           {feature.accuracy && (
-            <span
-              className="text-xs font-bold font-mono"
-              style={{ color: feature.accent }}
-            >
+            <span className="text-xs font-bold font-mono" style={{ color: feature.accent }}>
               {feature.accuracy}
             </span>
           )}
         </div>
 
-        <p className="text-xs leading-relaxed" style={{ color: "#64748b" }}>
+        <p className="text-xs leading-relaxed text-muted-foreground">
           {feature.description}
         </p>
       </div>
@@ -183,7 +169,7 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
       {feature.accuracy && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono" style={{ color: "#475569" }}>
+            <span className="text-xs font-mono text-muted-foreground/60">
               {feature.model}
             </span>
             <span className="text-xs font-mono" style={{ color: feature.accent }}>
@@ -196,7 +182,7 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
 
       {!feature.accuracy && (
         <div
-          className="text-xs font-mono px-2 py-1 rounded self-start"
+          className="text-xs font-mono px-2 py-1 rounded-md self-start"
           style={{
             background: `${feature.accent}10`,
             color: feature.accent,
@@ -206,14 +192,13 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
           {feature.model}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
 export default function BentoFeatures() {
   return (
-    <section id="features" className="relative py-28" style={{ background: "#07070e" }}>
-      {/* Subtle radial gradient */}
+    <section id="features" className="relative py-28 bg-background">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -224,31 +209,24 @@ export default function BentoFeatures() {
       <div className="relative z-10 max-w-7xl mx-auto px-6">
         {/* Section header */}
         <div className="flex flex-col items-center text-center gap-4 mb-16">
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "rgba(139,92,246,0.08)",
-              border: "1px solid rgba(139,92,246,0.2)",
-              color: "#8b5cf6",
-            }}
-          >
+          <Badge variant="purple" className="py-1 px-3">
             Detection Modalities
-          </div>
+          </Badge>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
-            style={{ color: "#e2e8f0", fontFamily: "var(--font-display)" }}
+            className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Detect Across{" "}
             <span className="gradient-text-purple">Every Medium</span>
           </h2>
-          <p className="text-base max-w-xl" style={{ color: "#64748b" }}>
+          <p className="text-base max-w-xl text-muted-foreground">
             Four specialized AI models, each trained on domain-specific artifacts.
             One unified API to interrogate them all.
           </p>
         </div>
 
         {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {FEATURES.map((feature, i) => (
             <FeatureCard key={feature.id} feature={feature} index={i} />
           ))}

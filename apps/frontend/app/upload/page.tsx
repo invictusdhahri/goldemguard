@@ -2,17 +2,36 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, Image, Video, Music, FileText, AlertCircle, Zap, Shield, CheckCircle, Loader2 } from 'lucide-react'
+import { Upload, ImageIcon, Video, Music, FileText, Zap, Shield, CheckCircle, Loader2, X, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import InteractiveBackground from '../../components/InteractiveBackground'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Card, CardContent } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+
+const SUPPORTED_TYPES = [
+  { label: 'Images', ext: 'JPG, PNG, WebP', icon: ImageIcon, color: '#00d4ff' },
+  { label: 'Videos', ext: 'MP4, MOV, WebM', icon: Video, color: '#8b5cf6' },
+  { label: 'Audio', ext: 'MP3, WAV, FLAC', icon: Music, color: '#10b981' },
+  { label: 'Documents', ext: 'PDF, DOCX', icon: FileText, color: '#f59e0b' },
+]
+
+const FEATURES = [
+  { icon: Zap, title: 'Instant Analysis', desc: 'Results in under 2 seconds' },
+  { icon: Shield, title: 'Secure & Private', desc: 'Zero data retention policy' },
+  { icon: CheckCircle, title: '94%+ Accuracy', desc: 'Multi-model ensemble' },
+]
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
@@ -21,7 +40,6 @@ export default function UploadPage() {
       router.push('/login')
       return
     }
-    // Keep localStorage token in sync with the active Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
         localStorage.setItem('token', session.access_token)
@@ -31,26 +49,21 @@ export default function UploadPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-grid flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-cyan animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     )
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    setMousePosition({ x: e.clientX, y: e.clientY })
-  }
-
   const validateFile = (selectedFile: File): boolean => {
-    const maxSize = 100 * 1024 * 1024 // 100MB in bytes
-    
-    // Check file size
+    const maxSize = 100 * 1024 * 1024
     if (selectedFile.size > maxSize) {
       setError(`File too large. Maximum size is 100MB. Your file is ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`)
       return false
     }
-    
-    // Check file type
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
       'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
@@ -59,12 +72,10 @@ export default function UploadPage() {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/msword',
     ]
-    
     if (!allowedTypes.includes(selectedFile.type)) {
-      setError(`File type not supported. Please upload an image, video, audio, PDF, or Word document.`)
+      setError('File type not supported. Please upload an image, video, audio, PDF, or Word document.')
       return false
     }
-    
     return true
   }
 
@@ -90,41 +101,29 @@ export default function UploadPage() {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = () => {
-    setIsDragging(false)
-  }
-
   const handleUpload = async () => {
-    if (!file) return
-    
-    // Double-check file size before upload
-    if (!validateFile(file)) {
-      return
-    }
+    if (!file || !validateFile(file)) return
 
     setUploading(true)
     setError('')
+    setUploadProgress(10)
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'
 
     try {
-      // Step 1: Upload file
       const formData = new FormData()
       formData.append('file', file)
 
       const token = localStorage.getItem('token')
+      setUploadProgress(30)
+
       const uploadRes = await fetch(`${apiBase}/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       })
+
+      setUploadProgress(60)
 
       if (!uploadRes.ok) {
         const errorData = await uploadRes.json()
@@ -133,7 +132,6 @@ export default function UploadPage() {
 
       const uploadData = await uploadRes.json()
 
-      // Step 2: Derive media type from MIME type and create analysis job
       const mediaType = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('video/') ? 'video'
         : file.type.startsWith('audio/') ? 'audio'
@@ -145,11 +143,10 @@ export default function UploadPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          file_url: uploadData.file_url,
-          media_type: mediaType
-        })
+        body: JSON.stringify({ file_url: uploadData.file_url, media_type: mediaType })
       })
+
+      setUploadProgress(90)
 
       if (!analyzeRes.ok) {
         const errorData = await analyzeRes.json()
@@ -157,12 +154,13 @@ export default function UploadPage() {
       }
 
       const analyzeData = await analyzeRes.json()
+      setUploadProgress(100)
 
-      // Step 3: Redirect to result page
-      router.push(`/result/${analyzeData.job_id}`)
+      setTimeout(() => router.push(`/result/${analyzeData.job_id}`), 300)
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
+      setUploadProgress(0)
     } finally {
       setUploading(false)
     }
@@ -170,273 +168,227 @@ export default function UploadPage() {
 
   const getFileIcon = () => {
     if (!file) return Upload
-    if (file.type.startsWith('image/')) return Image
+    if (file.type.startsWith('image/')) return ImageIcon
     if (file.type.startsWith('video/')) return Video
     if (file.type.startsWith('audio/')) return Music
-    if (file.type.includes('pdf')) return FileText
     return FileText
   }
 
+  const getMediaBadgeVariant = () => {
+    if (!file) return 'muted' as const
+    if (file.type.startsWith('image/')) return 'cyan' as const
+    if (file.type.startsWith('video/')) return 'purple' as const
+    if (file.type.startsWith('audio/')) return 'verified' as const
+    return 'warning' as const
+  }
+
+  const FileIcon = getFileIcon()
+
   return (
-    <div className="min-h-screen bg-grid relative overflow-hidden" onMouseMove={handleMouseMove}>
-      {/* Interactive particle background */}
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <InteractiveBackground />
-      
-      {/* Gradient orbs background */}
+
+      {/* Background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(0,212,255,0.06)" }} />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(139,92,246,0.06)", animationDelay: '1s' }} />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-16 relative z-10">
-        {/* Header */}
-        <div className="text-center mb-12 space-y-4">
-          <h1 
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect()
-              const x = e.clientX - rect.left - rect.width / 2
-              const y = e.clientY - rect.top - rect.height / 2
-              e.currentTarget.style.transform = `perspective(1000px) rotateX(${-y / 30}deg) rotateY(${x / 30}deg)`
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)'
-            }}
-            className="text-6xl font-bold gradient-text-cyan transition-all duration-200 cursor-default hover:drop-shadow-[0_0_30px_rgba(0,212,255,0.5)]"
-            style={{ transformStyle: 'preserve-3d' }}
+      <div className="max-w-3xl mx-auto px-4 py-12 relative z-10">
+
+        {/* Back link */}
+        <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
+            <ArrowLeft size={14} />
+            Dashboard
+          </Link>
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold gradient-text-cyan mb-3" style={{ fontFamily: 'var(--font-display)' }}>
             AI Detection Scanner
           </h1>
-          <p 
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect()
-              const x = e.clientX - rect.left - rect.width / 2
-              const y = e.clientY - rect.top - rect.height / 2
-              e.currentTarget.style.transform = `perspective(1000px) rotateX(${-y / 40}deg) rotateY(${x / 40}deg)`
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)'
-            }}
-            className="text-xl text-slate-400 hover:text-slate-300 transition-all duration-200 cursor-default hover:drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]"
-            style={{ transformStyle: 'preserve-3d' }}
-          >
-            Upload your media for instant deepfake analysis
+          <p className="text-muted-foreground text-lg">
+            Upload your media for instant deepfake and AI-generation analysis
           </p>
         </div>
 
-        {/* Main Upload Card */}
-        <div className="glass-card rounded-2xl p-8 mb-6">
-          {/* Drop Zone */}
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => document.getElementById('file-input')?.click()}
-            className={`
-              relative overflow-hidden rounded-xl p-16 text-center cursor-pointer
-              transition-all duration-300 ease-out group
-              ${isDragging 
-                ? 'border-2 border-cyan-500 bg-cyan-500/5 scale-[1.02]' 
-                : file 
-                  ? 'border-2 border-purple-500/30 bg-purple-500/5'
-                  : 'border-2 border-dashed border-slate-700 hover:border-cyan-500/50 hover:bg-cyan-500/5'
-              }
-            `}
-          >
-            {/* Animated background effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            {/* Scan line effect when file is uploaded */}
-            {file && !uploading && (
-              <div className="scan-line" />
-            )}
-
-            {file ? (
-              <div className="relative z-10 space-y-4">
-                <div className="flex justify-center animate-bounce">
-                  {(() => {
-                    const Icon = getFileIcon()
-                    return <Icon className="w-24 h-24 text-cyan-400" strokeWidth={1.5} />
-                  })()}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-2xl font-bold text-white">{file.name}</p>
-                  <div className="flex items-center justify-center gap-4 text-slate-400">
-                    <span className={`text-lg ${file.size > 100 * 1024 * 1024 ? 'text-red-400 font-bold' : ''}`}>
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-lg capitalize">{file.type.split('/')[0]}</span>
-                  </div>
-                  {file.size > 100 * 1024 * 1024 && (
-                    <p className="text-sm text-red-400 mt-2">
-                      ⚠️ File exceeds 100MB limit
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setFile(null)
-                  }}
-                  onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const x = e.clientX - rect.left - rect.width / 2
-                    const y = e.clientY - rect.top - rect.height / 2
-                    e.currentTarget.style.transform = `perspective(1000px) rotateX(${-y / 10}deg) rotateY(${x / 10}deg)`
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)'
-                  }}
-                  className="mt-4 px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/30 rounded-lg transition-all duration-200"
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  Remove File
-                </button>
-              </div>
-            ) : (
-              <div className="relative z-10 space-y-6">
-                <div className="flex justify-center animate-float">
-                  <Upload className="w-24 h-24 text-cyan-400" strokeWidth={1.5} />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-3xl font-bold text-white">
-                    {isDragging ? 'Drop it here!' : 'Drop your file here'}
-                  </p>
-                  <p className="text-lg text-slate-400">
-                    or click to browse your files
-                  </p>
-                </div>
-                
-                {/* Supported formats */}
-                <div className="flex flex-wrap justify-center gap-3 pt-4">
-                  {['Images', 'Videos', 'Audio', 'PDFs', 'Word Docs'].map((type) => (
-                    <span
-                      key={type}
-                      className="px-4 py-2 text-sm bg-slate-800/50 border border-slate-700 rounded-lg text-slate-300"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-                
-                <p className="text-sm text-slate-500 pt-2">
-                  Maximum file size: <span className="text-cyan-400 font-semibold">100MB</span>
-                </p>
-              </div>
-            )}
-
-            <input
-              id="file-input"
-              type="file"
-              onChange={handleFileChange}
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-              className="hidden"
-            />
-          </div>
-        </div>
-
-        {/* Error Message */}
+        {/* Error */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 backdrop-blur-sm">
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertCircle className="w-6 h-6 flex-shrink-0" />
-              <p className="font-medium">{error}</p>
+          <Alert variant="destructive" className="mb-6">
+            <X className="h-4 w-4 flex-shrink-0" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Upload progress */}
+        {uploading && (
+          <div className="mb-6 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Uploading and analyzing...</span>
+              <span className="text-cyan font-mono">{uploadProgress}%</span>
             </div>
+            <Progress value={uploadProgress} variant="gradient" />
           </div>
         )}
 
+        {/* Main Upload Card */}
+        <Card className="mb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
+          <CardContent className="p-6">
+            {/* Drop Zone */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onClick={() => document.getElementById('file-input')?.click()}
+              className={`
+                relative overflow-hidden rounded-xl p-12 text-center cursor-pointer
+                transition-all duration-300 ease-out group
+                ${isDragging
+                  ? 'border-2 border-cyan scale-[1.01]'
+                  : file
+                    ? 'border-2 border-purple/30'
+                    : 'border-2 border-dashed border-border hover:border-cyan/40'
+                }
+              `}
+              style={{
+                background: isDragging
+                  ? 'rgba(0,212,255,0.04)'
+                  : file
+                    ? 'rgba(139,92,246,0.04)'
+                    : 'transparent',
+              }}
+            >
+              {/* Hover gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan/5 via-transparent to-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              {/* Scan line when file selected */}
+              {file && !uploading && <div className="scan-line" />}
+
+              {file ? (
+                <div className="relative z-10 space-y-4">
+                  <div className="flex justify-center" style={{ animation: uploading ? undefined : "float 4s ease-in-out infinite" }}>
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}>
+                      <FileIcon className="w-10 h-10 text-cyan" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xl font-bold text-foreground truncate max-w-xs mx-auto">{file.name}</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <Badge variant={getMediaBadgeVariant()}>
+                        {file.type.split('/')[0]}
+                      </Badge>
+                      <span className={`text-sm ${file.size > 100 * 1024 * 1024 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFile(null); setError('') }}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-border/80 rounded-lg transition-all"
+                  >
+                    <X size={12} />
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="relative z-10 space-y-5">
+                  <div className="flex justify-center" style={{ animation: "float 6s ease-in-out infinite" }}>
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)" }}>
+                      <Upload className="w-10 h-10 text-cyan" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground mb-1">
+                      {isDragging ? 'Drop it here!' : 'Drop your file here'}
+                    </p>
+                    <p className="text-muted-foreground">or click to browse your files</p>
+                  </div>
+
+                  {/* Supported formats */}
+                  <div className="flex flex-wrap justify-center gap-2 pt-2">
+                    {SUPPORTED_TYPES.map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <div key={type.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ background: `${type.color}0d`, border: `1px solid ${type.color}22`, color: type.color }}>
+                          <Icon size={12} />
+                          {type.label}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground/60">
+                    Maximum: <span className="text-cyan font-semibold">100MB</span>
+                  </p>
+                </div>
+              )}
+
+              <input
+                id="file-input"
+                type="file"
+                onChange={handleFileChange}
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                className="hidden"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Upload Button */}
-        {file && (
-          <div className="text-center space-y-6">
+        {file && !uploading && (
+          <div className="text-center space-y-3 mb-8">
             <button
               onClick={handleUpload}
               disabled={uploading}
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect()
-                const x = e.clientX - rect.left - rect.width / 2
-                const y = e.clientY - rect.top - rect.height / 2
-                e.currentTarget.style.transform = `perspective(1000px) rotateX(${-y / 20}deg) rotateY(${x / 20}deg) scale(1.05)`
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)'
-              }}
-              className={`
-                relative group px-12 py-5 rounded-xl text-lg font-bold
-                bg-gradient-to-r from-cyan-500 to-blue-500
-                hover:from-cyan-400 hover:to-blue-400
-                disabled:from-slate-700 disabled:to-slate-600
-                text-black hover:text-black
-                shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/80
-                disabled:shadow-none
-                transition-all duration-200 ease-out
-                disabled:cursor-not-allowed
-                overflow-hidden
-              `}
-              style={{ transformStyle: 'preserve-3d' }}
+              className="relative group px-10 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-cyan to-cyan-dim text-primary-foreground shadow-lg shadow-cyan/25 hover:shadow-cyan/45 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
             >
-              {/* Button shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              
-              {/* Interactive glow */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-400 blur-xl" />
-              </div>
-              
-              <span className="relative z-10 flex items-center gap-3">
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-6 h-6" />
-                    Start Analysis
-                  </>
-                )}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <span className="relative z-10 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Start Analysis
               </span>
             </button>
-
-            {/* Info text */}
-            <p className="text-sm text-slate-500">
-              Your file will be analyzed using advanced AI detection models
+            <p className="text-xs text-muted-foreground">
+              Analyzed using multi-model AI detection — results in seconds
             </p>
           </div>
         )}
 
-        {/* Features grid */}
-        {!file && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
-            {[
-              { icon: Zap, title: 'Fast Analysis', desc: 'Results in seconds' },
-              { icon: Shield, title: 'Secure Upload', desc: 'End-to-end encrypted' },
-              { icon: CheckCircle, title: 'High Accuracy', desc: '99%+ detection rate' },
-            ].map((feature, i) => {
-              const Icon = feature.icon
-              return (
-                <div
-                  key={i}
-                  onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const x = e.clientX - rect.left - rect.width / 2
-                    const y = e.clientY - rect.top - rect.height / 2
-                    e.currentTarget.style.transform = `perspective(1000px) rotateX(${-y / 15}deg) rotateY(${x / 15}deg) scale(1.05)`
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)'
-                  }}
-                  className="glass-card rounded-xl p-6 text-center space-y-2 transition-all duration-200"
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  <div className="flex justify-center mb-3">
-                    <Icon className="w-12 h-12 text-cyan-400" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-lg font-bold text-white">{feature.title}</h3>
-                  <p className="text-sm text-slate-400">{feature.desc}</p>
-                </div>
-              )
-            })}
+        {uploading && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-secondary/50 border border-border">
+              <Loader2 className="w-5 h-5 text-cyan animate-spin" />
+              <span className="font-semibold text-foreground">Analyzing your file...</span>
+            </div>
           </div>
+        )}
+
+        {/* Feature cards */}
+        {!file && (
+          <>
+            <Separator className="mb-8 opacity-30" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {FEATURES.map((feature) => {
+                const Icon = feature.icon
+                return (
+                  <Card key={feature.title} className="p-5 text-center backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.8) 0%, rgba(13,13,26,0.9) 100%)" }}>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan/10 border border-cyan/20">
+                        <Icon className="w-6 h-6 text-cyan" strokeWidth={1.5} />
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-bold text-foreground mb-1">{feature.title}</h3>
+                    <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                  </Card>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

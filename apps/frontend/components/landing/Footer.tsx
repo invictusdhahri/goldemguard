@@ -1,62 +1,60 @@
 "use client";
 
-import { Scan } from "lucide-react";
+import Link from "next/link";
+import { Scan, ExternalLink } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+
+const FOOTER_LINKS = [
+  { label: "Documentation", href: "/docs" },
+  { label: "API Reference", href: "#" },
+  { label: "Privacy Policy", href: "#" },
+];
 
 export default function Footer() {
   return (
-    <footer
-      className="relative py-12"
-      style={{
-        borderTop: "1px solid rgba(255,255,255,0.04)",
-        background: "#07070e",
-      }}
-    >
+    <footer className="relative py-10 bg-background">
+      <Separator className="mb-10 opacity-40" />
+
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div
-              className="relative w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(139,92,246,0.15))",
-                border: "1px solid rgba(0,212,255,0.2)",
-              }}
-            >
-              <Scan size={14} style={{ color: "#00d4ff" }} />
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative w-7 h-7 rounded-lg flex items-center justify-center bg-cyan/10 border border-cyan/20 group-hover:bg-cyan/15 transition-colors">
+              <Scan size={14} className="text-cyan" />
             </div>
             <span
-              className="text-sm font-bold tracking-tight"
-              style={{ fontFamily: "var(--font-display)", color: "#64748b" }}
+              className="text-sm font-bold tracking-tight text-muted-foreground group-hover:text-foreground transition-colors"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              Veritas<span style={{ color: "#00d4ff" }}>AI</span>
+              Veritas<span className="text-cyan">AI</span>
             </span>
-          </div>
+          </Link>
 
           {/* Links */}
-          <div className="flex items-center gap-6">
-            {[
-              { label: "Documentation", href: "/docs" },
-              { label: "API Reference", href: "#" },
-              { label: "Privacy Policy", href: "#" },
-              { label: "GitHub", href: "#" },
-            ].map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-xs transition-colors duration-200"
-                style={{ color: "#64748b" }}
-                onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
-                onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "#64748b")}
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
+          <nav className="flex flex-wrap items-center justify-center gap-1">
+            {FOOTER_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200"
+                >
+                  {Icon && <Icon size={12} />}
+                  {link.label}
+                </a>
+              );
+            })}
+          </nav>
 
-          {/* Copyright */}
-          <p className="text-xs" style={{ color: "#475569" }}>
-            © 2024 VeritasAI. Built for truth.
-          </p>
+          {/* Right side */}
+          <div className="flex items-center gap-4">
+            <p className="text-xs text-muted-foreground/60">
+              © {new Date().getFullYear()} VeritasAI
+            </p>
+            <Separator orientation="vertical" className="h-3 opacity-40" />
+            <p className="text-xs text-muted-foreground/60">Built for truth.</p>
+          </div>
         </div>
       </div>
     </footer>

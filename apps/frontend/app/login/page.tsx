@@ -4,10 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, LogIn, UserPlus, ArrowLeft, Shield, Mail, Lock } from 'lucide-react'
+import { AlertCircle, LogIn, UserPlus, ArrowLeft, Shield, Mail, Lock, CheckCircle } from 'lucide-react'
 import InteractiveBackground from '@/components/InteractiveBackground'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import { Separator } from '@/components/ui/separator'
+
+const FEATURES = [
+  'Multi-model AI detection',
+  'Zero data retention',
+  'Real-time analysis',
+]
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -19,10 +26,7 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
-  // Prevent hydration mismatch for animations
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,19 +34,13 @@ export default function LoginPage() {
     setError('')
     setSuccess('')
 
-    // Must match lib/api.ts / upload: base includes /api (e.g. http://localhost:4000/api)
-    const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(
-      /\/+$/,
-      '',
-    )
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(/\/+$/, '')
     const path = isLogin ? '/auth/login' : '/auth/register'
 
     try {
       const response = await fetch(`${apiBase}${path}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
 
@@ -58,20 +56,15 @@ export default function LoginPage() {
         )
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed')
-      }
+      if (!response.ok) throw new Error(data.error || 'Authentication failed')
 
       if (isLogin) {
-        // Save token and user info
         localStorage.setItem('token', data.session?.access_token || '')
         localStorage.setItem('user', JSON.stringify(data.user || {}))
-        
-        // Success feedback then redirect
         setSuccess('Login successful! Redirecting...')
-        setTimeout(() => router.push('/upload'), 1500)
+        setTimeout(() => router.push('/upload'), 1200)
       } else {
-        setSuccess('Registration successful! Check your email for confirmation.')
+        setSuccess('Account created! Check your email for confirmation.')
         setIsLogin(true)
       }
     } catch (err) {
@@ -84,57 +77,91 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <main className="min-h-screen bg-[#07070e] relative overflow-hidden flex items-center justify-center p-4">
-      {/* Dynamic Backgrounds */}
+    <main className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
       <InteractiveBackground />
-      
-      {/* Decorative Blur Spheres */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Header / Logo */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+      {/* Background blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ background: "rgba(0,212,255,0.07)" }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ background: "rgba(139,92,246,0.07)", animationDelay: '2s' }} />
+
+      <div className="relative z-10 w-full max-w-sm">
+        {/* Logo & back */}
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          className="text-center mb-8"
         >
-          <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors mb-6 group">
+          <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-cyan transition-colors mb-6 group text-sm font-medium">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Back to Home</span>
+            Back to Home
           </Link>
-          
+
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full" />
-              <Shield className="relative w-14 h-14 text-cyan-400" strokeWidth={1.5} />
+              <div className="absolute inset-0 bg-cyan/20 blur-xl rounded-full" />
+              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center bg-cyan/10 border border-cyan/25">
+                <Shield className="w-7 h-7 text-cyan" strokeWidth={1.5} />
+              </div>
             </div>
           </div>
-          
-          <h1 className="text-4xl font-bold tracking-tight">
+
+          <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
             <span className="gradient-text-cyan">Veritas</span>
-            <span className="text-white">AI</span>
+            <span className="text-foreground">AI</span>
           </h1>
-          <p className="text-slate-400 mt-2 text-sm">
+          <p className="text-muted-foreground mt-1.5 text-sm">
             {isLogin ? 'Secure access to your dashboard' : 'Join the frontier of AI transparency'}
           </p>
+
+          {/* Feature pills */}
+          <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+            {FEATURES.map((f) => (
+              <span key={f} className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan/50" />
+                {f}
+              </span>
+            ))}
+          </div>
         </motion.div>
 
-        {/* glass-card container */}
+        {/* Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.97, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ type: "spring", damping: 20, stiffness: 100 }}
-          className="glass-card rounded-3xl p-8 shadow-2xl relative overflow-hidden"
+          transition={{ type: "spring", damping: 22, stiffness: 120 }}
+          className="relative rounded-2xl p-7 shadow-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(18,18,32,0.95) 0%, rgba(13,13,26,0.98) 100%)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "0 0 60px rgba(0,212,255,0.06), 0 25px 50px rgba(0,0,0,0.4)",
+          }}
         >
-          {/* Subtle top border glow for the card */}
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+          {/* Top accent */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/30 to-transparent" />
 
-          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+          {/* Tab switcher */}
+          <div className="flex rounded-xl p-1 mb-6 bg-secondary/50">
+            {['Sign In', 'Register'].map((tab, i) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => { setIsLogin(i === 0); setError(''); setSuccess('') }}
+                className={`flex-1 py-2 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  isLogin === (i === 0)
+                    ? 'bg-card text-foreground shadow-sm border border-border/50'
+                    : 'text-muted-foreground hover:text-secondary-foreground'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Email Address"
+              label="Email"
               type="email"
-              placeholder="name@company.com"
+              placeholder="you@company.com"
               icon={<Mail className="w-4 h-4" />}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -151,68 +178,69 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete={isLogin ? "current-password" : "new-password"}
+              hint={!isLogin ? "At least 8 characters" : undefined}
             />
 
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  key="error"
+                  initial={{ opacity: 0, height: 0, y: -8 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3 text-red-400"
+                  className="rounded-xl p-3.5 flex items-start gap-2.5 bg-destructive/10 border border-destructive/20 text-destructive"
                 >
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm font-medium">{error}</p>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm">{error}</p>
                 </motion.div>
               )}
 
               {success && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  key="success"
+                  initial={{ opacity: 0, height: 0, y: -8 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-center gap-3 text-green-400"
+                  className="rounded-xl p-3.5 flex items-start gap-2.5 bg-verified/10 border border-verified/20 text-verified"
                 >
-                  <Shield className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm font-medium">{success}</p>
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm">{success}</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <Button type="submit" loading={loading} className="w-full h-12">
-              {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-              {isLogin ? 'Sign In' : 'Create Account'}
+            <Button type="submit" loading={loading} size="lg" className="w-full mt-2">
+              {isLogin
+                ? <><LogIn className="w-4 h-4" /> Sign In</>
+                : <><UserPlus className="w-4 h-4" /> Create Account</>
+              }
             </Button>
           </form>
 
-          {/* Footer of the card */}
-          <div className="mt-8 pt-6 border-t border-white/5 text-center">
-            <p className="text-slate-400 text-sm">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin)
-                  setError('')
-                  setSuccess('')
-                }}
-                className="ml-2 text-cyan-400 font-semibold hover:text-cyan-300 transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500 rounded px-1"
-              >
-                {isLogin ? 'Join Now' : 'Sign In'}
-              </button>
-            </p>
-          </div>
+          <Separator className="my-5 opacity-30" />
+
+          <p className="text-center text-sm text-muted-foreground">
+            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            <button
+              type="button"
+              onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess('') }}
+              className="ml-1.5 text-cyan font-semibold hover:text-cyan/80 transition-colors"
+            >
+              {isLogin ? 'Join Now' : 'Sign In'}
+            </button>
+          </p>
         </motion.div>
 
-        {/* Legal / Extra Links */}
-        <motion.div 
+        {/* Legal links */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-8 flex justify-center gap-6"
+          className="mt-6 flex justify-center gap-6"
         >
-          <Link href="/terms" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Terms of Service</Link>
-          <Link href="/privacy" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</Link>
+          <span className="text-muted-foreground/20 text-xs">·</span>
+          <Link href="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</Link>
         </motion.div>
       </div>
     </main>

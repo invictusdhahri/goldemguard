@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Play, ShieldCheck, Zap, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const SCAN_LABELS = [
   { label: "Image Analyzed", color: "#00d4ff", x: "8%", y: "18%", delay: "1.2s" },
@@ -44,16 +45,13 @@ function ScannerPanel() {
       }}
     >
       {/* Header bar */}
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-      >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#f43f5e" }} />
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#f59e0b" }} />
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#10b981" }} />
+          <div className="w-2.5 h-2.5 rounded-full bg-ai" />
+          <div className="w-2.5 h-2.5 rounded-full bg-warn" />
+          <div className="w-2.5 h-2.5 rounded-full bg-verified" />
         </div>
-        <span className="text-xs font-mono" style={{ color: "#475569" }}>
+        <span className="text-xs font-mono text-muted-foreground/50">
           veritas-scanner v2.4.1
         </span>
         <div className="flex items-center gap-1.5">
@@ -73,7 +71,6 @@ function ScannerPanel() {
 
       {/* Scanner viewport */}
       <div className="relative scan-container" style={{ height: "260px" }}>
-        {/* Faux image — abstract AI art pattern */}
         <div
           className="absolute inset-0 bg-grid-sm"
           style={{
@@ -85,7 +82,6 @@ function ScannerPanel() {
           }}
         />
 
-        {/* Abstract "face" shapes suggesting a portrait */}
         <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 260">
           <ellipse cx="200" cy="110" rx="70" ry="85" fill="none" stroke="#8b5cf6" strokeWidth="0.5" />
           <ellipse cx="175" cy="95" rx="12" ry="8" fill="#8b5cf6" opacity="0.3" />
@@ -98,10 +94,8 @@ function ScannerPanel() {
           ))}
         </svg>
 
-        {/* Scan line */}
         {phase === "scanning" && <div className="scan-line" />}
 
-        {/* Detection boxes */}
         {showLabels && (
           <>
             <div
@@ -133,7 +127,6 @@ function ScannerPanel() {
           </>
         )}
 
-        {/* Floating info badges */}
         {showLabels && SCAN_LABELS.map((item, i) => (
           <div
             key={i}
@@ -151,29 +144,23 @@ function ScannerPanel() {
               whiteSpace: "nowrap",
             }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: item.color, boxShadow: `0 0 4px ${item.color}` }}
-            />
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: item.color, boxShadow: `0 0 4px ${item.color}` }} />
             {item.label}
           </div>
         ))}
       </div>
 
       {/* Status bar */}
-      <div
-        className="px-4 py-3"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-      >
+      <div className="px-4 py-3 border-t border-border">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono" style={{ color: "#475569" }}>
+          <span className="text-xs font-mono text-muted-foreground">
             {phase === "scanning" ? "Analyzing patterns..." : "Analysis complete"}
           </span>
-          <span className="text-xs font-mono" style={{ color: "#00d4ff" }}>
+          <span className="text-xs font-mono text-cyan">
             {Math.min(100, Math.round(progress))}%
           </span>
         </div>
-        <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-1 rounded-full overflow-hidden bg-secondary">
           <div
             className="h-full rounded-full transition-all duration-100"
             style={{
@@ -187,22 +174,14 @@ function ScannerPanel() {
         </div>
 
         {phase === "verdict" && (
-          <div
-            className="flex items-center justify-between mt-3 pt-3"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-          >
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono" style={{ color: "#64748b" }}>VERDICT</span>
-              <span
-                className="text-xs font-bold font-mono px-2 py-0.5 rounded"
-                style={{ background: "rgba(244,63,94,0.15)", color: "#f43f5e", border: "1px solid rgba(244,63,94,0.3)" }}
-              >
-                AI GENERATED
-              </span>
+              <span className="text-xs font-mono text-muted-foreground">VERDICT</span>
+              <Badge variant="ai">AI GENERATED</Badge>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-xs font-mono" style={{ color: "#64748b" }}>Model:</span>
-              <span className="text-xs font-mono" style={{ color: "#94a3b8" }}>SigLIP v1</span>
+              <span className="text-xs font-mono text-muted-foreground">Model:</span>
+              <span className="text-xs font-mono text-secondary-foreground">SigLIP v1</span>
             </div>
           </div>
         )}
@@ -232,7 +211,6 @@ export default function Hero() {
         }}
       />
 
-      {/* Grid overlay */}
       <div
         className="absolute inset-0 pointer-events-none bg-grid"
         style={{ maskImage: "radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%)" }}
@@ -250,21 +228,14 @@ export default function Hero() {
             }}
           >
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 self-start">
-              <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{
-                  background: "rgba(0,212,255,0.08)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                  color: "#00d4ff",
-                }}
-              >
+            <div className="inline-flex self-start">
+              <Badge variant="cyan" className="gap-2 py-1 px-3">
                 <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: "#00d4ff", animation: "pulse-glow 2s ease-in-out infinite" }}
+                  className="w-1.5 h-1.5 rounded-full bg-cyan flex-shrink-0"
+                  style={{ animation: "pulse-glow 2s ease-in-out infinite" }}
                 />
                 Multimodal AI Detection Platform
-              </div>
+              </Badge>
             </div>
 
             {/* Headline */}
@@ -272,19 +243,16 @@ export default function Hero() {
               className="text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              <span style={{ color: "#e2e8f0" }}>Detect AI Content</span>
+              <span className="text-foreground">Detect AI Content</span>
               <br />
               <span className="gradient-text-cyan">Before It Deceives</span>
             </h1>
 
             {/* Subheadline */}
-            <p
-              className="text-lg leading-relaxed max-w-xl"
-              style={{ color: "#64748b" }}
-            >
+            <p className="text-lg leading-relaxed max-w-xl text-muted-foreground">
               VeritasAI deploys four specialized detection models — across images, video, audio, and documents —
               with a self-healing fallback architecture that{" "}
-              <span style={{ color: "#94a3b8" }}>always delivers a verdict</span>.
+              <span className="text-secondary-foreground">always delivers a verdict</span>.
             </p>
 
             {/* Stats row */}
@@ -301,7 +269,7 @@ export default function Hero() {
                   >
                     {stat.value}
                   </span>
-                  <span className="text-xs" style={{ color: "#475569" }}>
+                  <span className="text-xs text-muted-foreground/70">
                     {stat.label}
                   </span>
                 </div>
@@ -315,26 +283,23 @@ export default function Hero() {
                 <ArrowRight size={16} />
               </Link>
               <button className="btn-ghost flex items-center gap-2">
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-                >
-                  <Play size={10} style={{ color: "#e2e8f0", marginLeft: "1px" }} />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white/5 border border-border">
+                  <Play size={10} className="text-foreground ml-px" />
                 </div>
                 Watch Demo
               </button>
             </div>
 
             {/* Trust badges */}
-            <div className="flex items-center gap-4 pt-2">
+            <div className="flex items-center gap-4 pt-1 flex-wrap">
               {[
                 { icon: ShieldCheck, label: "Zero data retention" },
                 { icon: Zap, label: "Real-time detection" },
                 { icon: Globe, label: "REST API ready" },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <Icon size={13} style={{ color: "#475569" }} />
-                  <span className="text-xs" style={{ color: "#475569" }}>
+                  <Icon size={13} className="text-muted-foreground/60" />
+                  <span className="text-xs text-muted-foreground/60">
                     {label}
                   </span>
                 </div>
@@ -344,6 +309,7 @@ export default function Hero() {
 
           {/* Right — Scanner panel */}
           <div
+            className="relative"
             style={{
               opacity: mounted ? 1 : 0,
               transform: mounted ? "translateY(0)" : "translateY(32px)",
@@ -363,15 +329,12 @@ export default function Hero() {
                 animation: "float 5s ease-in-out infinite",
               }}
             >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(16,185,129,0.15)" }}
-              >
-                <ShieldCheck size={16} style={{ color: "#10b981" }} />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-verified/15">
+                <ShieldCheck size={16} className="text-verified" />
               </div>
               <div>
-                <div className="text-xs font-bold" style={{ color: "#10b981" }}>Verified Authentic</div>
-                <div className="text-xs" style={{ color: "#475569" }}>Human-created content</div>
+                <div className="text-xs font-bold text-verified">Verified Authentic</div>
+                <div className="text-xs text-muted-foreground">Human-created content</div>
               </div>
             </div>
           </div>

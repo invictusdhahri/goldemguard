@@ -8,60 +8,78 @@ import { cn } from '@/lib/utils'
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
+  hint?: string
   icon?: React.ReactNode
+  iconRight?: React.ReactNode
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, className = '', ...props }, ref) => {
+  ({ label, error, hint, icon, iconRight, className = '', ...props }, ref) => {
     return (
       <div className="w-full space-y-1.5 group">
         {label && (
-          <label className="block text-sm font-medium text-slate-400 group-focus-within:text-cyan-400 transition-colors duration-300 ml-1">
+          <label className="block text-sm font-medium text-muted-foreground group-focus-within:text-cyan transition-colors duration-200 ml-0.5">
             {label}
           </label>
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-500/70 transition-colors duration-300">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 group-focus-within:text-cyan/60 transition-colors duration-200 pointer-events-none">
               {icon}
             </div>
           )}
           <input
             ref={ref}
             className={cn(
-              `
-              w-full px-4 py-3 rounded-xl
-              bg-slate-900/40 backdrop-blur-md border border-white/5
-              text-white placeholder-slate-600
-              focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/30
-              transition-all duration-300
-              hover:border-white/10 hover:bg-slate-900/60
-              disabled:opacity-50 disabled:cursor-not-allowed
-              `,
-              icon && 'pl-11',
-              error ? 'border-red-500/50 focus:ring-red-500/30 focus:border-red-500/30' : '',
+              "w-full px-4 py-3 rounded-xl",
+              "bg-input border border-border",
+              "text-foreground placeholder:text-muted-foreground/40",
+              "focus:outline-none focus:ring-1 focus:ring-ring/50 focus:border-cyan/30",
+              "hover:border-border/60",
+              "transition-all duration-200",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "text-sm",
+              icon && "pl-10",
+              iconRight && "pr-10",
+              error && "border-destructive/50 focus:ring-destructive/30 focus:border-destructive/40",
               className
             )}
             {...props}
           />
-          
-          {/* Subtle bottom glow effect on focus */}
-          <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent group-focus-within:w-full transition-all duration-500 opacity-0 group-focus-within:opacity-100" />
+          {iconRight && (
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 group-focus-within:text-cyan/60 transition-colors duration-200 pointer-events-none">
+              {iconRight}
+            </div>
+          )}
+
+          {/* Focus glow line */}
+          <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-0 h-[1px] bg-gradient-to-r from-transparent via-cyan/50 to-transparent group-focus-within:w-full transition-all duration-400 opacity-0 group-focus-within:opacity-100" />
         </div>
 
         <AnimatePresence mode="wait">
-          {error && (
+          {error ? (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              key="error"
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center gap-1.5 text-xs text-red-500/90 ml-1 mt-1"
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-1.5 text-xs text-destructive ml-0.5"
             >
-              <AlertCircle className="w-3.5 h-3.5" />
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{error}</span>
             </motion.div>
-          )}
+          ) : hint ? (
+            <motion.p
+              key="hint"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-xs text-muted-foreground ml-0.5"
+            >
+              {hint}
+            </motion.p>
+          ) : null}
         </AnimatePresence>
       </div>
     )

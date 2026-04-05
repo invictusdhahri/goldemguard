@@ -3,6 +3,8 @@
 import { useRef, useEffect, useState } from "react";
 import { type LucideProps, Cpu, CheckCircle2, AlertTriangle, RotateCcw, ShieldCheck, Upload } from "lucide-react";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 type LucideIcon = ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
 
@@ -85,7 +87,6 @@ export default function FallbackChain() {
       className="relative py-28 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #07070e 0%, #0a0a12 50%, #07070e 100%)" }}
     >
-      {/* Background accent */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -99,31 +100,24 @@ export default function FallbackChain() {
       <div className="relative z-10 max-w-7xl mx-auto px-6">
         {/* Section header */}
         <div className="flex flex-col items-center text-center gap-4 mb-16">
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "rgba(0,212,255,0.08)",
-              border: "1px solid rgba(0,212,255,0.2)",
-              color: "#00d4ff",
-            }}
-          >
+          <Badge variant="cyan" className="py-1 px-3">
             Always-On Architecture
-          </div>
+          </Badge>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight"
-            style={{ color: "#e2e8f0", fontFamily: "var(--font-display)" }}
+            className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
           >
             A Verdict,{" "}
             <span className="gradient-text-cyan">Every Single Time</span>
           </h2>
-          <p className="text-base max-w-xl" style={{ color: "#64748b" }}>
+          <p className="text-base max-w-xl text-muted-foreground">
             Our self-healing fallback architecture automatically reroutes to backup models
             so detection never fails — even when primary models are overloaded or uncertain.
           </p>
         </div>
 
         {/* Pipeline visualization */}
-        <div className="glass-card rounded-2xl p-8 mb-10">
+        <Card className="p-8 mb-8 backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
           {/* Desktop pipeline */}
           <div className="hidden md:flex items-center justify-between gap-2">
             {STEPS.map((step, i) => {
@@ -133,83 +127,46 @@ export default function FallbackChain() {
 
               return (
                 <div key={step.id} className="flex items-center flex-1">
-                  <div
-                    className="flex flex-col items-center gap-3 flex-shrink-0"
-                    style={{ minWidth: "120px" }}
-                  >
-                    {/* Step circle */}
+                  <div className="flex flex-col items-center gap-3 flex-shrink-0" style={{ minWidth: "120px" }}>
                     <div
                       className="relative w-14 h-14 rounded-xl flex items-center justify-center text-xl transition-all duration-500"
                       style={{
-                        background: isActive
-                          ? `${step.color}20`
-                          : isPast
-                          ? `${step.color}0d`
-                          : "rgba(255,255,255,0.03)",
+                        background: isActive ? `${step.color}20` : isPast ? `${step.color}0d` : "rgba(255,255,255,0.03)",
                         border: `1px solid ${isActive ? step.color + "50" : isPast ? step.color + "25" : "rgba(255,255,255,0.06)"}`,
                         boxShadow: isActive ? `0 0 20px ${step.color}30` : "none",
                         transform: isActive ? "scale(1.08)" : "scale(1)",
                       }}
                     >
-                      <Icon
-                        size={22}
-                        style={{
-                          color: isActive ? step.color : isPast ? step.color + "88" : "#475569",
-                          transition: "color 0.5s ease",
-                        }}
-                      />
-
+                      <Icon size={22} style={{ color: isActive ? step.color : isPast ? step.color + "88" : "#475569", transition: "color 0.5s ease" }} />
                       {isActive && (
                         <span
                           className="absolute inset-0 rounded-xl"
-                          style={{
-                            animation: "pulse-glow 1.5s ease-in-out infinite",
-                            border: `1px solid ${step.color}`,
-                            opacity: 0.4,
-                          }}
+                          style={{ animation: "pulse-glow 1.5s ease-in-out infinite", border: `1px solid ${step.color}`, opacity: 0.4 }}
                         />
                       )}
                     </div>
 
                     <div className="text-center">
                       <div
-                        className="text-sm font-semibold mb-0.5"
-                        style={{
-                          color: isActive ? "#e2e8f0" : isPast ? "#94a3b8" : "#475569",
-                          fontFamily: "var(--font-display)",
-                          transition: "color 0.5s ease",
-                        }}
+                        className="text-sm font-semibold mb-0.5 transition-colors duration-500"
+                        style={{ color: isActive ? "#e2e8f0" : isPast ? "#94a3b8" : "#475569", fontFamily: "var(--font-display)" }}
                       >
                         {step.label}
                       </div>
-                      <div className="text-xs" style={{ color: "#64748b" }}>
-                        {step.sublabel}
-                      </div>
+                      <div className="text-xs text-muted-foreground">{step.sublabel}</div>
                     </div>
 
-                    {/* Step indicator */}
-                    {isPast && (
-                      <CheckCircle2 size={14} style={{ color: step.color, opacity: 0.7 }} />
-                    )}
+                    {isPast && <CheckCircle2 size={14} style={{ color: step.color, opacity: 0.7 }} />}
                   </div>
 
-                  {/* Connector */}
                   {i < STEPS.length - 1 && (
                     <div className="flex-1 mx-4 flex flex-col items-center gap-1.5">
                       <div className="pipeline-line w-full" />
                       {i === 1 && (
-                        <div
-                          className="flex items-center gap-1 px-2 py-0.5 rounded"
-                          style={{
-                            background: "rgba(245,158,11,0.1)",
-                            border: "1px solid rgba(245,158,11,0.2)",
-                          }}
-                        >
-                          <AlertTriangle size={9} style={{ color: "#f59e0b" }} />
-                          <span style={{ color: "#f59e0b", fontSize: "9px", fontFamily: "monospace" }}>
-                            auto-fallback
-                          </span>
-                        </div>
+                        <Badge variant="warning" className="text-[9px] py-0.5 px-1.5 gap-1">
+                          <AlertTriangle size={9} />
+                          auto-fallback
+                        </Badge>
                       )}
                     </div>
                   )}
@@ -237,20 +194,20 @@ export default function FallbackChain() {
                       <Icon size={16} style={{ color: isActive ? step.color : "#475569" }} />
                     </div>
                     {i < STEPS.length - 1 && (
-                      <div className="w-px h-8 my-1" style={{ background: "rgba(0,212,255,0.15)" }} />
+                      <div className="w-px h-8 my-1 bg-cyan/15" />
                     )}
                   </div>
                   <div className="pt-2 pb-6">
                     <div className="text-sm font-semibold" style={{ color: isActive ? "#e2e8f0" : "#64748b", fontFamily: "var(--font-display)" }}>
                       {step.label}
                     </div>
-                    <div className="text-xs mt-0.5" style={{ color: "#64748b" }}>{step.sublabel}</div>
+                    <div className="text-xs mt-0.5 text-muted-foreground">{step.sublabel}</div>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Fallback scenarios */}
         <div
@@ -262,32 +219,29 @@ export default function FallbackChain() {
           }}
         >
           {FALLBACK_SCENARIOS.map((scenario, i) => (
-            <div
-              key={i}
-              className="glass-card rounded-xl p-5 flex flex-col gap-3"
-            >
+            <Card key={i} className="p-5 flex flex-col gap-3 backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
               <div className="flex items-start gap-2">
-                <AlertTriangle size={14} style={{ color: "#f59e0b", flexShrink: 0, marginTop: "1px" }} />
+                <AlertTriangle size={14} className="text-warn flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-semibold" style={{ color: "#e2e8f0" }}>Trigger: </span>
-                  <span className="text-xs" style={{ color: "#64748b" }}>{scenario.trigger}</span>
+                  <span className="text-xs font-semibold text-foreground">Trigger: </span>
+                  <span className="text-xs text-muted-foreground">{scenario.trigger}</span>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <RotateCcw size={14} style={{ color: "#00d4ff", flexShrink: 0, marginTop: "1px" }} />
+                <RotateCcw size={14} className="text-cyan flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-semibold" style={{ color: "#e2e8f0" }}>Action: </span>
-                  <span className="text-xs" style={{ color: "#64748b" }}>{scenario.action}</span>
+                  <span className="text-xs font-semibold text-foreground">Action: </span>
+                  <span className="text-xs text-muted-foreground">{scenario.action}</span>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} style={{ color: "#10b981", flexShrink: 0, marginTop: "1px" }} />
+                <CheckCircle2 size={14} className="text-verified flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-semibold" style={{ color: "#e2e8f0" }}>Outcome: </span>
-                  <span className="text-xs" style={{ color: "#10b981" }}>{scenario.outcome}</span>
+                  <span className="text-xs font-semibold text-foreground">Outcome: </span>
+                  <span className="text-xs text-verified">{scenario.outcome}</span>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
