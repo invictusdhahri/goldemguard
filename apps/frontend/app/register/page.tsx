@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { UserPlus, AlertCircle, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
-import InteractiveBackground from '@/components/InteractiveBackground'
-
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -55,38 +53,28 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-grid">
-      <InteractiveBackground />
-
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 animate-pulse rounded-full bg-cyan-500/10 blur-3xl" />
-        <div
-          className="absolute right-1/4 bottom-1/4 h-96 w-96 animate-pulse rounded-full bg-purple-500/10 blur-3xl"
-          style={{ animationDelay: '1s' }}
-        />
-      </div>
-
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
       <div className="relative z-10 mx-auto w-full max-w-md px-4">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center gap-2 text-slate-400 transition-colors hover:text-cyan-400"
+          className="mb-8 inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-cyan"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to home
         </Link>
 
-        <div className="glass-card rounded-2xl p-8">
+        <div className="liquid-glass-card rounded-2xl p-8">
           <div className="mb-8 text-center">
             <div className="mb-4 flex justify-center">
-              <UserPlus className="h-12 w-12 text-cyan-400" strokeWidth={1.5} />
+              <UserPlus className="h-12 w-12 text-cyan" strokeWidth={1.5} />
             </div>
             <h1 className="gradient-text-cyan text-3xl font-bold">Create account</h1>
-            <p className="mt-2 text-slate-400">Sign up to analyze media with VeritasAI</p>
+            <p className="mt-2 text-muted-foreground">Sign up to analyze media with GaulemGuard</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="register-email" className="mb-1.5 block text-sm font-medium text-slate-300">
+              <label htmlFor="register-email" className="mb-1.5 block text-sm font-medium text-foreground/80">
                 Email
               </label>
               <input
@@ -95,13 +83,13 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-foreground placeholder-muted-foreground transition-colors focus:border-cyan focus:ring-1 focus:ring-cyan focus:outline-none"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium text-slate-300">
+              <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium text-foreground/80">
                 Password
               </label>
               <input
@@ -111,7 +99,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-foreground placeholder-muted-foreground transition-colors focus:border-cyan focus:ring-1 focus:ring-cyan focus:outline-none"
                 placeholder="At least 6 characters"
               />
             </div>
@@ -119,7 +107,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="register-confirm"
-                className="mb-1.5 block text-sm font-medium text-slate-300"
+                className="mb-1.5 block text-sm font-medium text-foreground/80"
               >
                 Confirm password
               </label>
@@ -130,14 +118,14 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-foreground placeholder-muted-foreground transition-colors focus:border-cyan focus:ring-1 focus:ring-cyan focus:outline-none"
                 placeholder="Re-enter password"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
-                <div className="flex items-center gap-2 text-sm text-red-400">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3">
+                <div className="flex items-center gap-2 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <p>{error}</p>
                 </div>
@@ -145,8 +133,8 @@ export default function RegisterPage() {
             )}
 
             {success && (
-              <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3">
-                <div className="flex items-start gap-2 text-sm text-green-400">
+              <div className="rounded-xl border border-verified/30 bg-verified/10 p-3">
+                <div className="flex items-start gap-2 text-sm text-verified">
                   <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <p>{success}</p>
                 </div>
@@ -156,7 +144,8 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3.5 text-base font-bold text-black shadow-lg shadow-cyan-500/50 transition-all duration-200 hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/80 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-600 disabled:shadow-none"
+              className="group relative w-full overflow-hidden rounded-xl px-6 py-3.5 text-base font-bold text-primary-foreground shadow-lg transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              style={{ background: 'linear-gradient(135deg, var(--color-cyan) 0%, var(--color-cyan-dim) 100%)', boxShadow: '0 4px 24px var(--color-cyan-glow)' }}
             >
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -170,9 +159,9 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-400">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-cyan-400 hover:text-cyan-300">
+            <Link href="/login" className="font-medium text-cyan hover:text-cyan/80">
               Sign in
             </Link>
           </p>

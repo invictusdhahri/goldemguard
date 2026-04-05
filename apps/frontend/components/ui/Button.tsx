@@ -57,13 +57,14 @@ export default function Button({
   const isDisabled = disabled || loading
 
   return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <motion.button
       type={type}
       whileHover={{ scale: isDisabled ? 1 : 1.01 }}
       whileTap={{ scale: isDisabled ? 1 : 0.98 }}
       disabled={isDisabled}
       className={cn(buttonVariants({ variant, size }), className)}
-      {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      {...(props as any)}
     >
       {/* Shine effect on primary/accent */}
       {(variant === 'primary' || variant === 'accent') && !isDisabled && (

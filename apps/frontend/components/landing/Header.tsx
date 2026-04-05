@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Scan, ChevronRight, Menu, X, ArrowRight } from "lucide-react";
+import { Shield, ChevronRight, Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Models", href: "#models" },
+  { label: "Docs", href: "/docs" },
 ];
 
 export default function Header() {
@@ -21,7 +22,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll when menu open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -31,70 +31,110 @@ export default function Header() {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+          "fixed z-50 nav-transition",
           scrolled
-            ? "bg-background/85 backdrop-blur-xl border-b border-border shadow-lg shadow-black/20"
-            : "bg-transparent"
+            ? "nav-scrolled nav-floating rounded-2xl"
+            : "bg-transparent rounded-none"
         )}
+        style={{
+          top: scrolled ? 12 : 0,
+          left: scrolled ? "max(16px, calc(50% - 448px))" : 0,
+          right: scrolled ? "max(16px, calc(50% - 448px))" : 0,
+        }}
       >
-        <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <nav
+          className="mx-auto flex items-center justify-between gap-4 nav-transition"
+          style={{
+            height: scrolled ? 48 : 64,
+            padding: scrolled ? "0 16px" : "0 20px",
+            maxWidth: scrolled ? "none" : 1280,
+          }}
+        >
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
-            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-cyan/10 border border-cyan/25 group-hover:bg-cyan/15 transition-colors">
-              <Scan size={16} className="text-cyan" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-cyan shadow-[0_0_6px_#00d4ff]" />
+          <Link
+            href="/"
+            className="flex items-center gap-2 group flex-shrink-0"
+            onClick={() => setMenuOpen(false)}
+          >
+            <div
+              className={cn(
+                "relative rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-105",
+                scrolled ? "w-[26px] h-[26px]" : "w-[32px] h-[32px]"
+              )}
+              style={{
+                background: "var(--glass-bg)",
+                border: "1px solid var(--glass-border)",
+                boxShadow: "0 2px 8px var(--glass-shadow)",
+              }}
+            >
+              <Shield
+                size={scrolled ? 12 : 15}
+                style={{ color: "var(--color-purple)", transition: "all 0.5s" }}
+              />
             </div>
-            <span className="text-[17px] font-bold tracking-tight text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-              Veritas<span className="text-cyan">AI</span>
+            <span
+              className={cn(
+                "font-bold tracking-tight transition-all duration-500",
+                scrolled ? "text-[14px]" : "text-[16px]"
+              )}
+              style={{
+                fontFamily: "var(--font-display)",
+                color: "var(--foreground)",
+              }}
+            >
+              Gaulem<span style={{ color: "var(--color-purple)" }}>Guard</span>
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Desktop nav links — centered */}
+          <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
             {NAV_LINKS.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+                className={cn(
+                  "rounded-full font-medium transition-all duration-300 hover:bg-[var(--glass-bg)] hover:text-[var(--foreground)]",
+                  scrolled ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
+                )}
+                style={{ color: "var(--muted-foreground)" }}
               >
                 {item.label}
               </a>
             ))}
           </div>
 
-          {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/docs"
-              className="btn-ghost text-sm"
-              style={{ padding: "8px 18px", fontSize: "14px" }}
-            >
-              Documentation
-            </Link>
+          {/* Right side: theme toggle + CTA */}
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+            <ThemeToggle />
             <Link
               href="/login"
-              className="btn-primary text-sm flex items-center gap-1.5"
-              style={{ padding: "8px 18px", fontSize: "14px" }}
+              className={cn(
+                "btn-primary transition-all duration-500",
+                scrolled ? "text-[12px]" : "text-[13px]"
+              )}
+              style={{ padding: scrolled ? "6px 14px" : "8px 18px" }}
             >
-              Launch App
-              <ChevronRight size={14} />
+              Launch App <ChevronRight size={scrolled ? 11 : 13} />
             </Link>
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className={cn(
-              "md:hidden w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200",
-              menuOpen
-                ? "bg-cyan/10 border border-cyan/20 text-cyan"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-            )}
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
+          {/* Mobile: theme toggle + burger */}
+          <div className="md:hidden flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              className="liquid-glass-button flex items-center justify-center transition-all duration-200"
+              style={{ padding: "7px", width: "34px", height: "34px" }}
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? (
+                <X size={16} style={{ color: "var(--foreground)" }} />
+              ) : (
+                <Menu size={16} style={{ color: "var(--muted-foreground)" }} />
+              )}
+            </button>
+          </div>
         </nav>
       </header>
 
@@ -105,44 +145,53 @@ export default function Header() {
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setMenuOpen(false)}
-        style={{ background: "rgba(7,7,14,0.6)", backdropFilter: "blur(4px)" }}
+        style={{
+          background: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+        }}
       />
 
       {/* Mobile drawer */}
       <div
         className={cn(
-          "fixed top-16 left-0 right-0 z-40 md:hidden transition-all duration-300 ease-out",
+          "fixed left-4 right-4 z-40 md:hidden transition-all duration-300 ease-out rounded-2xl overflow-hidden",
+          scrolled ? "top-[68px]" : "top-[64px]",
           menuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
         )}
-        style={{ background: "rgba(7,7,14,0.98)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{
+          background: "var(--nav-smoky-bg)",
+          backdropFilter: "saturate(180%) blur(32px)",
+          WebkitBackdropFilter: "saturate(180%) blur(32px)",
+          border: "1px solid var(--glass-border)",
+          boxShadow: "0 16px 48px var(--glass-shadow)",
+        }}
       >
-        <div className="px-6 py-6 flex flex-col gap-2">
+        <div className="px-4 py-5 flex flex-col gap-1">
           {NAV_LINKS.map((item, i) => (
             <a
               key={item.label}
               href={item.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200"
-              style={{ transitionDelay: `${i * 40}ms` }}
+              className="flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-[var(--glass-bg-hover)]"
+              style={{
+                color: "var(--foreground)",
+                transitionDelay: `${i * 40}ms`,
+              }}
             >
               {item.label}
-              <ArrowRight size={14} className="opacity-40" />
+              <ArrowRight size={14} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
             </a>
           ))}
 
-          <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-border">
-            <Link
-              href="/docs"
-              className="btn-ghost text-center text-sm"
-              style={{ padding: "11px", fontSize: "14px" }}
-              onClick={() => setMenuOpen(false)}
-            >
-              Documentation
-            </Link>
+          <div
+            className="flex flex-col gap-2 pt-4 mt-3"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
             <Link
               href="/login"
               className="btn-primary justify-center text-sm"
-              style={{ padding: "11px", fontSize: "14px" }}
+              style={{ padding: "11px", fontSize: "14px", borderRadius: "12px" }}
               onClick={() => setMenuOpen(false)}
             >
               Launch App <ChevronRight size={14} />

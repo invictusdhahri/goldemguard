@@ -18,7 +18,6 @@ import {
   FileText,
   RefreshCw,
 } from 'lucide-react'
-import InteractiveBackground from '@/components/InteractiveBackground'
 import Button from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -106,7 +105,7 @@ function getMediaIcon(mediaType: string) {
 
 function AnalysisCardSkeleton() {
   return (
-    <Card className="overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
+    <Card className="overflow-hidden" style={{ background: "var(--glass-bg)" }}>
       <CardContent className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <Skeleton className="w-8 h-8 rounded-lg" />
@@ -131,14 +130,14 @@ function AnalysisCard({ analysis, index }: { analysis: Analysis; index: number }
       <Card
         className="group overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-200"
         style={{
-          background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)",
+          background: "var(--glass-bg)",
           animationDelay: `${index * 80}ms`,
         }}
       >
         <CardContent className="p-5 flex flex-col h-full gap-3">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-secondary border border-border">
               <MediaIcon size={16} className="text-muted-foreground" />
             </div>
             <Badge variant="muted" className="capitalize text-[11px]">
@@ -264,8 +263,6 @@ export default function HistoryPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      <InteractiveBackground />
-
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-12">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
@@ -309,7 +306,7 @@ export default function HistoryPage() {
             ))}
           </div>
         ) : error ? (
-          <Card className="p-10 text-center" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
+          <Card className="p-10 text-center" style={{ background: "var(--glass-bg)" }}>
             <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-warn" />
             <p className="text-foreground font-semibold mb-1">Failed to load history</p>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
@@ -319,7 +316,7 @@ export default function HistoryPage() {
             </Button>
           </Card>
         ) : analyses.length === 0 ? (
-          <Card className="p-14 text-center" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
+          <Card className="p-14 text-center" style={{ background: "var(--glass-bg)" }}>
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-secondary border border-border">
               <Clock className="h-8 w-8 text-muted-foreground" strokeWidth={1} />
             </div>
@@ -344,7 +341,7 @@ export default function HistoryPage() {
                 { label: 'Authentic', value: analyses.filter(a => a.verdict === 'REAL').length, color: '#10b981' },
                 { label: 'Uncertain', value: analyses.filter(a => a.verdict === 'UNCERTAIN').length, color: '#f59e0b' },
               ].map((stat) => (
-                <Card key={stat.label} className="p-4 text-center" style={{ background: "rgba(13,13,26,0.8)" }}>
+                <Card key={stat.label} className="p-4 text-center liquid-glass-card">
                   <div className="text-2xl font-bold mb-0.5" style={{ color: stat.color, fontFamily: 'var(--font-display)' }}>
                     {stat.value}
                   </div>

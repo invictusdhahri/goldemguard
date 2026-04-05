@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, LogIn, UserPlus, ArrowLeft, Shield, Mail, Lock, CheckCircle } from 'lucide-react'
-import InteractiveBackground from '@/components/InteractiveBackground'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { Separator } from '@/components/ui/separator'
@@ -90,12 +89,6 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
-      <InteractiveBackground />
-
-      {/* Background blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ background: "rgba(0,212,255,0.07)" }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ background: "rgba(139,92,246,0.07)", animationDelay: '2s' }} />
-
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo & back */}
         <motion.div
@@ -118,8 +111,8 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
-            <span className="gradient-text-cyan">Veritas</span>
-            <span className="text-foreground">AI</span>
+            <span className="gradient-text-cyan">Gaulem</span>
+            <span className="text-foreground">Guard</span>
           </h1>
           <p className="text-muted-foreground mt-1.5 text-sm">
             {isLogin ? 'Secure access to your dashboard' : 'Join the frontier of AI transparency'}
@@ -141,11 +134,9 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.97, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: "spring", damping: 22, stiffness: 120 }}
-          className="relative rounded-2xl p-7 shadow-2xl overflow-hidden"
+          className="relative rounded-2xl p-7 shadow-2xl overflow-hidden liquid-glass-card"
           style={{
-            background: "linear-gradient(135deg, rgba(18,18,32,0.95) 0%, rgba(13,13,26,0.98) 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            boxShadow: "0 0 60px rgba(0,212,255,0.06), 0 25px 50px rgba(0,0,0,0.4)",
+            boxShadow: "0 0 60px var(--color-cyan-glow), 0 25px 50px var(--glass-shadow)",
           }}
         >
           {/* Top accent */}

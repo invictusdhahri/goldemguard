@@ -24,8 +24,6 @@ import {
 import { useJobStatus, useResult } from '@/hooks/useAnalysis';
 import type { Verdict, ModelEvidence, FinalResponse } from '@veritas/shared';
 import { useAuth } from '@/hooks/useAuth';
-import InteractiveBackground from '../../../components/InteractiveBackground';
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Aligns with backend `SE_AI_SCORE_THRESHOLD`: strong SightEngine AI-likeness → AI headline. */
@@ -153,15 +151,15 @@ export default function ResultPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-grid flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-cyan animate-spin" />
       </div>
     );
   }
 
   if (!jobId) {
     return (
-      <div className="min-h-screen bg-grid flex items-center justify-center text-slate-400">
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
         Invalid job link
       </div>
     );
@@ -171,20 +169,11 @@ export default function ResultPage() {
   const processing = !job || job.status === 'pending' || job.status === 'processing';
 
   return (
-    <div className="min-h-screen bg-grid relative overflow-hidden">
-      <InteractiveBackground />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: '1s' }}
-        />
-      </div>
-
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="max-w-2xl mx-auto px-4 py-12 relative z-10">
         <Link
           href="/upload"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-cyan transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           New analysis
@@ -194,24 +183,24 @@ export default function ResultPage() {
           <h1 className="text-4xl font-bold gradient-text-cyan font-[family-name:var(--font-display)]">
             Analysis result
           </h1>
-          <p className="text-slate-500 text-sm mt-2 font-mono truncate px-2">Job {jobId}</p>
+          <p className="text-muted-foreground text-sm mt-2 font-mono truncate px-2">Job {jobId}</p>
         </div>
 
         {/* ── Loading / queued ── */}
         {(statusLoading || processing) && (
-          <div className="glass-card rounded-2xl p-12 flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-            <p className="text-lg text-slate-300">
+          <div className="liquid-glass-card rounded-2xl p-12 flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-cyan animate-spin" />
+            <p className="text-lg text-foreground">
               {job?.status === 'processing' ? 'Analyzing your file…' : 'Waiting in queue…'}
             </p>
-            <p className="text-sm text-slate-500">This usually takes a few seconds</p>
+            <p className="text-sm text-muted-foreground">This usually takes a few seconds</p>
           </div>
         )}
 
         {/* ── Status error ── */}
         {statusError && (
-          <div className="glass-card rounded-2xl p-6 border border-red-500/30 bg-red-500/5">
-            <div className="flex items-center gap-3 text-red-400">
+          <div className="liquid-glass-card rounded-2xl p-6 border border-destructive/30 bg-destructive/5">
+            <div className="flex items-center gap-3 text-destructive">
               <AlertCircle className="w-6 h-6 shrink-0" />
               <p>{statusError instanceof Error ? statusError.message : 'Could not load job'}</p>
             </div>
@@ -220,12 +209,12 @@ export default function ResultPage() {
 
         {/* ── Failed ── */}
         {failed && (
-          <div className="glass-card rounded-2xl p-8 border border-amber-500/30 bg-amber-500/5">
-            <div className="flex items-center gap-3 text-amber-400 mb-2">
+          <div className="liquid-glass-card rounded-2xl p-8 border border-warn/30 bg-warn/5">
+            <div className="flex items-center gap-3 text-warn mb-2">
               <XCircle className="w-8 h-8 shrink-0" />
               <h2 className="text-xl font-semibold">Analysis failed</h2>
             </div>
-            <p className="text-slate-400">
+            <p className="text-muted-foreground">
               Something went wrong while processing this job. Try uploading again.
             </p>
           </div>
@@ -233,15 +222,15 @@ export default function ResultPage() {
 
         {/* ── Result loading ── */}
         {resultEnabled && resultLoading && (
-          <div className="glass-card rounded-2xl p-12 flex justify-center">
-            <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
+          <div className="liquid-glass-card rounded-2xl p-12 flex justify-center">
+            <Loader2 className="w-10 h-10 text-cyan animate-spin" />
           </div>
         )}
 
         {/* ── Result error ── */}
         {resultEnabled && resultError && (
-          <div className="glass-card rounded-2xl p-6 border border-red-500/30">
-            <p className="text-red-400">
+          <div className="liquid-glass-card rounded-2xl p-6 border border-destructive/30">
+            <p className="text-destructive">
               {resultError instanceof Error ? resultError.message : 'Could not load result'}
             </p>
           </div>
@@ -289,15 +278,15 @@ export default function ResultPage() {
           return (
             <div className="space-y-5">
               {/* ── Verdict card ── */}
-              <div className="glass-card rounded-2xl p-8">
+              <div className="liquid-glass-card rounded-2xl p-8">
                 <div className={`rounded-2xl border bg-gradient-to-br p-8 text-center ${ring}`}>
                   <div className="flex justify-center mb-4">
                     <Icon className={`w-16 h-16 ${iconColor}`} strokeWidth={1.25} />
                   </div>
-                  <h2 className="text-3xl font-bold text-white mb-2">{headline}</h2>
-                  <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">{subtitle}</p>
+                  <h2 className="text-3xl font-bold text-foreground mb-2">{headline}</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed max-w-md mx-auto">{subtitle}</p>
                   {isAudio && (
-                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-400">
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan">
                       <Music className="w-3 h-3" />
                       Audio deepfake detection by Resemble AI
                     </div>
@@ -311,22 +300,22 @@ export default function ResultPage() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 mt-5">
-                  <div className="rounded-xl bg-slate-800/40 border border-slate-700/80 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                  <div className="rounded-xl bg-secondary/50 border border-border p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                       {isAudio ? 'Deepfake score' : isVideo ? 'AI-likeness score' : 'AI-likeness score'}
                     </p>
-                    <p className="text-2xl font-semibold text-cyan-400 tabular-nums">
+                    <p className="text-2xl font-semibold text-cyan tabular-nums">
                       {(result.confidence * 100).toFixed(1)}%
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {isAudio
                         ? 'Aggregated score from Resemble AI (0 = authentic · 100 = deepfake)'
                         : 'Blend of detector rates (0 = authentic · 100 = AI) when multiple models run'}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-800/40 border border-slate-700/80 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Processing time</p>
-                    <p className="text-2xl font-semibold text-white tabular-nums">
+                  <div className="rounded-xl bg-secondary/50 border border-border p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Processing time</p>
+                    <p className="text-2xl font-semibold text-foreground tabular-nums">
                       {result.processing_ms != null ? `${result.processing_ms} ms` : '—'}
                     </p>
                   </div>
@@ -335,20 +324,20 @@ export default function ResultPage() {
 
               {/* ── Audio model breakdown (Resemble AI — standalone audio files) ── */}
               {isAudio && resembleEv && (
-                <div className="glass-card rounded-2xl p-6 space-y-4">
-                  <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                <div className="liquid-glass-card rounded-2xl p-6 space-y-4">
+                  <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                     Audio detection breakdown
                   </h3>
 
                   {/* Resemble Detect card */}
-                  <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-slate-700/60 p-4">
-                    <AudioLines className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-4 rounded-xl bg-secondary/50 border border-border p-4">
+                    <AudioLines className="w-5 h-5 text-cyan shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div>
-                          <span className="text-sm font-semibold text-slate-200">Resemble AI Detect</span>
+                          <span className="text-sm font-semibold text-foreground">Resemble AI Detect</span>
                           {resembleEv.sample_seconds != null && (
-                            <p className="text-[11px] text-slate-500 mt-0.5">
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
                               Uses the first {resembleEv.sample_seconds}s of the file (not full length)
                             </p>
                           )}
@@ -358,18 +347,18 @@ export default function ResultPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-4 mt-1 flex-wrap">
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                           Neural deepfake detector · aggregated across {resembleEv.chunk_scores.length} chunk{resembleEv.chunk_scores.length !== 1 ? 's' : ''}
                         </p>
-                        <p className="text-xs text-slate-500">
-                          Consistency: <span className="text-slate-300 tabular-nums">{(parseFloat(resembleEv.consistency) * 100).toFixed(1)}%</span>
+                        <p className="text-xs text-muted-foreground">
+                          Consistency: <span className="text-foreground/80 tabular-nums">{(parseFloat(resembleEv.consistency) * 100).toFixed(1)}%</span>
                         </p>
                       </div>
 
                       {/* Per-chunk score bars */}
                       {resembleEv.chunk_scores.length > 0 && (
-                        <div className="mt-3 border-t border-slate-700/60 pt-3">
-                          <p className="text-[11px] uppercase tracking-wide text-slate-500 mb-2">
+                        <div className="mt-3 border-t border-border pt-3">
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
                             Per-chunk scores
                           </p>
                           <div className="flex items-end gap-1 h-10">
@@ -392,8 +381,8 @@ export default function ResultPage() {
                             })}
                           </div>
                           <div className="flex justify-between mt-1">
-                            <span className="text-[10px] text-slate-600">Chunk 1</span>
-                            <span className="text-[10px] text-slate-600">Chunk {resembleEv.chunk_scores.length}</span>
+                            <span className="text-[10px] text-muted-foreground/60">Chunk 1</span>
+                            <span className="text-[10px] text-muted-foreground/60">Chunk {resembleEv.chunk_scores.length}</span>
                           </div>
                         </div>
                       )}
@@ -405,12 +394,12 @@ export default function ResultPage() {
                     <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                       resembleEv.label === 'fake'
                         ? 'bg-rose-500/5 border-rose-500/30'
-                        : 'bg-slate-800/40 border-slate-700/60'
+                        : 'bg-secondary/50 border-border'
                     }`}>
                       <Radio className={`w-5 h-5 shrink-0 mt-0.5 ${resembleEv.label === 'fake' ? 'text-rose-400' : 'text-emerald-400'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-200">Audio Source Tracing</span>
+                          <span className="text-sm font-semibold text-foreground">Audio Source Tracing</span>
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                             resembleEv.source_tracing === 'real'
                               ? 'bg-emerald-500/15 text-emerald-400'
@@ -419,7 +408,7 @@ export default function ResultPage() {
                             {formatSourceLabel(resembleEv.source_tracing)}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {resembleEv.source_tracing === 'real'
                             ? 'No synthetic voice generator identified — audio appears to be human-recorded.'
                             : `Resemble AI identified the likely synthesis origin as ${formatSourceLabel(resembleEv.source_tracing)}.`}
@@ -430,14 +419,14 @@ export default function ResultPage() {
 
                   {/* Intelligence analysis */}
                   {resembleEv.intelligence && (
-                    <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-slate-700/60 p-4">
+                    <div className="flex items-start gap-4 rounded-xl bg-secondary/50 border border-border p-4">
                       <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-200 mb-1">
+                        <p className="text-sm font-semibold text-foreground mb-1">
                           Intelligence analysis
                           <span className="ml-2 text-[11px] font-normal text-fuchsia-400/70">by Resemble AI</span>
                         </p>
-                        <p className="text-xs text-slate-400 leading-relaxed">{resembleEv.intelligence}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{resembleEv.intelligence}</p>
                       </div>
                     </div>
                   )}
@@ -446,8 +435,8 @@ export default function ResultPage() {
 
               {/* ── Video model breakdown ── */}
               {isVideo && (
-                <div className="glass-card rounded-2xl p-6 space-y-4">
-                  <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                <div className="liquid-glass-card rounded-2xl p-6 space-y-4">
+                  <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                     Video analysis breakdown
                   </h3>
 
@@ -457,19 +446,19 @@ export default function ResultPage() {
                       ? resembleEv.label === 'fake'
                         ? 'bg-rose-500/5 border-rose-500/40'
                         : 'bg-emerald-500/5 border-emerald-500/30'
-                      : 'bg-slate-800/20 border-slate-700/30'
+                      : 'bg-secondary/20 border-border/50'
                   }`}>
                     {resembleEv
                       ? resembleEv.label === 'fake'
                         ? <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                         : <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                      : <AudioLines className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      : <AudioLines className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                     }
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div>
-                          <span className="text-sm font-semibold text-slate-200">Audio check</span>
-                          <p className="text-[11px] text-slate-500 mt-0.5">by Resemble AI Detect</p>
+                          <span className="text-sm font-semibold text-foreground">Audio check</span>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">by Resemble AI Detect</p>
                         </div>
                         {resembleEv ? (
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
@@ -486,11 +475,11 @@ export default function ResultPage() {
                                 : 'Uncertain'}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-600">not available</span>
+                          <span className="text-xs text-muted-foreground/60">not available</span>
                         )}
                       </div>
                       {resembleEv && (
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {resembleEv.label === 'fake'
                             ? 'AI-generated audio detected — full video flagged as AI-generated without visual analysis.'
                             : resembleEv.label === 'real'
@@ -499,7 +488,7 @@ export default function ResultPage() {
                         </p>
                       )}
                       {!resembleEv && ev?.resemble && 'skip_reason' in ev.resemble && (
-                        <p className="text-xs text-slate-500 mt-1">{ev.resemble.skip_reason}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{ev.resemble.skip_reason}</p>
                       )}
                     </div>
                   </div>
@@ -507,22 +496,22 @@ export default function ResultPage() {
                   {/* SightEngine video */}
                   <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                     hasSeVideo
-                      ? 'bg-slate-800/40 border-slate-700/60'
-                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                      ? 'bg-secondary/50 border-border'
+                      : 'bg-secondary/20 border-border/50 opacity-50'
                   }`}>
                     <Eye className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">SightEngine video genai</span>
+                        <span className="text-sm font-semibold text-foreground">SightEngine video genai</span>
                         {seVideoScore !== undefined ? (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(seVideoScore).color}`}>
                             {(seVideoScore * 100).toFixed(1)}% — {scoreBadge(seVideoScore).label}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-600">not run</span>
+                          <span className="text-xs text-muted-foreground/60">not run</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {hasSeVideo
                           ? `Dedicated AI-video detection · analyzed ${seVideoEv ? seVideoEv.frame_scores.length : '?'} frame(s) · score shown is max across all frames`
                           : (ev?.sightengine_video && 'skip_reason' in ev.sightengine_video
@@ -530,13 +519,13 @@ export default function ResultPage() {
                             : 'Did not run')}
                       </p>
                       {seVideoEv && seVideoEv.frame_scores.length > 0 && (
-                        <div className="mt-3 border-t border-slate-700/60 pt-3">
+                        <div className="mt-3 border-t border-border pt-3">
                           <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                               Per-frame scores ({seVideoEv.frame_scores.length} frame{seVideoEv.frame_scores.length !== 1 ? 's' : ''})
                             </p>
-                            <p className="text-[11px] text-slate-500">
-                              Mean: <span className="text-slate-300 tabular-nums">{(seVideoEv.mean_score * 100).toFixed(1)}%</span>
+                            <p className="text-[11px] text-muted-foreground">
+                              Mean: <span className="text-foreground/80 tabular-nums">{(seVideoEv.mean_score * 100).toFixed(1)}%</span>
                             </p>
                           </div>
                           <div className="flex items-end gap-1 h-10">
@@ -554,8 +543,8 @@ export default function ResultPage() {
                             })}
                           </div>
                           <div className="flex justify-between mt-1">
-                            <span className="text-[10px] text-slate-600">Frame 1</span>
-                            <span className="text-[10px] text-slate-600">Frame {seVideoEv.frame_scores.length}</span>
+                            <span className="text-[10px] text-muted-foreground/60">Frame 1</span>
+                            <span className="text-[10px] text-muted-foreground/60">Frame {seVideoEv.frame_scores.length}</span>
                           </div>
                         </div>
                       )}
@@ -565,22 +554,22 @@ export default function ResultPage() {
                   {/* xAI Grok (video) */}
                   <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                     hasVideoGrok
-                      ? 'bg-slate-800/40 border-slate-700/60'
-                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                      ? 'bg-secondary/50 border-border'
+                      : 'bg-secondary/20 border-border/50 opacity-50'
                   }`}>
                     <Zap className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">xAI Grok 4.1 Fast</span>
+                        <span className="text-sm font-semibold text-foreground">xAI Grok 4.1 Fast</span>
                         {grokScore !== undefined ? (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(grokScore).color}`}>
                             {(grokScore * 100).toFixed(1)}% — {scoreBadge(grokScore).label}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-600">not run</span>
+                          <span className="text-xs text-muted-foreground/60">not run</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {hasVideoGrok
                           ? 'Vision LLM — analyzed a representative frame extracted from the video'
                           : (ev?.grok && 'skip_reason' in ev.grok
@@ -588,12 +577,12 @@ export default function ResultPage() {
                             : 'Did not run — check server logs or apps/backend/.env')}
                       </p>
                       {ev?.grok && 'proof' in ev.grok && ev.grok.proof && (
-                        <div className="mt-2 border-t border-slate-700/60 pt-2 space-y-1">
+                        <div className="mt-2 border-t border-border pt-2 space-y-1">
                           <p className="text-[11px] uppercase tracking-wide text-violet-400/90">
                             Grok assessment: {ev.grok.assessment.replace(/_/g, ' ')}
                           </p>
-                          <p className="text-xs text-slate-400 leading-relaxed">
-                            <span className="text-slate-500">Evidence: </span>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            <span className="text-muted-foreground">Evidence: </span>
                             {ev.grok.proof}
                           </p>
                         </div>
@@ -604,13 +593,13 @@ export default function ResultPage() {
                   {/* Claude Haiku (video) */}
                   <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                     hasVideoClaude
-                      ? 'bg-slate-800/40 border-slate-700/60'
-                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                      ? 'bg-secondary/50 border-border'
+                      : 'bg-secondary/20 border-border/50 opacity-50'
                   }`}>
                     <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">Anthropic Claude Haiku</span>
+                        <span className="text-sm font-semibold text-foreground">Anthropic Claude Haiku</span>
                         {hasVideoClaude && claudeScore !== undefined ? (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(claudeScore).color}`}>
                             {(claudeScore * 100).toFixed(1)}% — {scoreBadge(claudeScore).label}
@@ -618,10 +607,10 @@ export default function ResultPage() {
                         ) : hasVideoClaude ? (
                           <span className="text-xs text-fuchsia-400 font-medium">Reasoning synthesis</span>
                         ) : (
-                          <span className="text-xs text-slate-600">not run</span>
+                          <span className="text-xs text-muted-foreground/60">not run</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {hasVideoClaude
                           ? 'Vision rate (frame) + reasoning synthesis — proof bullets explaining why the video was flagged'
                           : (ev?.claude && 'skip_reason' in ev.claude
@@ -629,9 +618,9 @@ export default function ResultPage() {
                             : 'Did not run — check apps/backend/.env')}
                       </p>
                       {ev?.claude && 'proof_points' in ev.claude && ev.claude.proof_points.length > 0 && (
-                        <ul className="mt-2 border-t border-slate-700/60 pt-2 space-y-1.5">
+                        <ul className="mt-2 border-t border-border pt-2 space-y-1.5">
                           {ev.claude.proof_points.map((line: string, i: number) => (
-                            <li key={i} className="text-xs text-slate-400 leading-relaxed flex gap-2">
+                            <li key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-2">
                               <span className="text-fuchsia-500 shrink-0">{i + 1}.</span>
                               <span>{line}</span>
                             </li>
@@ -645,29 +634,29 @@ export default function ResultPage() {
 
               {/* ── Image model breakdown (SightEngine / Grok / Claude) ── */}
               {!isAudio && !isVideo && (hasSightEngine || hasGrok || hasClaude || ev?.sightengine) && (
-                <div className="glass-card rounded-2xl p-6 space-y-4">
-                  <h3 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                <div className="liquid-glass-card rounded-2xl p-6 space-y-4">
+                  <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                     Model breakdown
                   </h3>
 
                   {/* SightEngine */}
-                  <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-slate-700/60 p-4">
+                  <div className="flex items-start gap-4 rounded-xl bg-secondary/50 border border-border p-4">
                     <Eye className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">SightEngine genai</span>
+                        <span className="text-sm font-semibold text-foreground">SightEngine genai</span>
                         {seScore !== undefined && (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(seScore).color}`}>
                             {(seScore * 100).toFixed(1)}% — {scoreBadge(seScore).label}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Dedicated AI-image detection model · raw score 0–100%
                       </p>
                       {ev?.sightengine?.proof && (
-                        <p className="text-xs text-slate-400 mt-2 leading-relaxed border-t border-slate-700/60 pt-2">
-                          <span className="text-slate-500">Evidence: </span>
+                        <p className="text-xs text-muted-foreground mt-2 leading-relaxed border-t border-border pt-2">
+                          <span className="text-muted-foreground">Evidence: </span>
                           {ev.sightengine.proof}
                         </p>
                       )}
@@ -677,22 +666,22 @@ export default function ResultPage() {
                   {/* xAI Grok */}
                   <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                     hasGrok
-                      ? 'bg-slate-800/40 border-slate-700/60'
-                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                      ? 'bg-secondary/50 border-border'
+                      : 'bg-secondary/20 border-border/50 opacity-50'
                   }`}>
                     <Zap className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">xAI Grok 4.1 Fast</span>
+                        <span className="text-sm font-semibold text-foreground">xAI Grok 4.1 Fast</span>
                         {grokScore !== undefined ? (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(grokScore).color}`}>
                             {(grokScore * 100).toFixed(1)}% — {scoreBadge(grokScore).label}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-600">not run</span>
+                          <span className="text-xs text-muted-foreground/60">not run</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {hasGrok
                           ? 'Vision LLM — independent assessment (runs in parallel with SightEngine)'
                           : (ev?.grok && 'skip_reason' in ev.grok
@@ -700,12 +689,12 @@ export default function ResultPage() {
                             : 'Did not run — check server logs or apps/backend/.env')}
                       </p>
                       {ev?.grok && 'proof' in ev.grok && ev.grok.proof && (
-                        <div className="mt-2 border-t border-slate-700/60 pt-2 space-y-1">
+                        <div className="mt-2 border-t border-border pt-2 space-y-1">
                           <p className="text-[11px] uppercase tracking-wide text-violet-400/90">
                             Grok assessment: {ev.grok.assessment.replace(/_/g, ' ')}
                           </p>
-                          <p className="text-xs text-slate-400 leading-relaxed">
-                            <span className="text-slate-500">Evidence: </span>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            <span className="text-muted-foreground">Evidence: </span>
                             {ev.grok.proof}
                           </p>
                         </div>
@@ -716,13 +705,13 @@ export default function ResultPage() {
                   {/* Claude Haiku */}
                   <div className={`flex items-start gap-4 rounded-xl border p-4 ${
                     hasClaude
-                      ? 'bg-slate-800/40 border-slate-700/60'
-                      : 'bg-slate-800/20 border-slate-700/30 opacity-50'
+                      ? 'bg-secondary/50 border-border'
+                      : 'bg-secondary/20 border-border/50 opacity-50'
                   }`}>
                     <BrainCircuit className="w-5 h-5 text-fuchsia-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-slate-200">Anthropic Claude Haiku</span>
+                        <span className="text-sm font-semibold text-foreground">Anthropic Claude Haiku</span>
                         {hasClaude && claudeScore !== undefined ? (
                           <span className={`text-sm font-bold tabular-nums ${scoreBadge(claudeScore).color}`}>
                             {(claudeScore * 100).toFixed(1)}% — {scoreBadge(claudeScore).label}
@@ -730,10 +719,10 @@ export default function ResultPage() {
                         ) : hasClaude ? (
                           <span className="text-xs text-fuchsia-400 font-medium">Reasoning synthesis</span>
                         ) : (
-                          <span className="text-xs text-slate-600">not run</span>
+                          <span className="text-xs text-muted-foreground/60">not run</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {hasClaude
                           ? 'Vision rate (independent) plus reasoning synthesis — headline verdict, explanation, and proof bullets'
                           : (ev?.claude && 'skip_reason' in ev.claude
@@ -741,9 +730,9 @@ export default function ResultPage() {
                             : 'Did not run — check apps/backend/.env')}
                       </p>
                       {ev?.claude && 'proof_points' in ev.claude && ev.claude.proof_points.length > 0 && (
-                        <ul className="mt-2 border-t border-slate-700/60 pt-2 space-y-1.5">
+                        <ul className="mt-2 border-t border-border pt-2 space-y-1.5">
                           {ev.claude.proof_points.map((line: string, i: number) => (
-                            <li key={i} className="text-xs text-slate-400 leading-relaxed flex gap-2">
+                            <li key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-2">
                               <span className="text-fuchsia-500 shrink-0">{i + 1}.</span>
                               <span>{line}</span>
                             </li>
@@ -756,9 +745,9 @@ export default function ResultPage() {
               )}
 
               {/* ── Explanation + signals ── */}
-              <div className="glass-card rounded-2xl p-6 space-y-4">
+              <div className="liquid-glass-card rounded-2xl p-6 space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">
                     Explanation
                     {!isAudio && !isVideo && hasClaude && (
                       <span className="ml-2 normal-case text-fuchsia-500/70">by Claude Haiku</span>
@@ -770,17 +759,17 @@ export default function ResultPage() {
                       <span className="ml-2 normal-case text-cyan-500/70">by Resemble AI</span>
                     )}
                   </p>
-                  <p className="text-slate-300 leading-relaxed">{result.explanation}</p>
+                  <p className="text-foreground/80 leading-relaxed">{result.explanation}</p>
                 </div>
 
                 {result.top_signals && result.top_signals.length > 0 && (
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">
                       Top signals
                     </p>
                     <ul className="space-y-1">
                       {result.top_signals.map((s: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                        <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
                           <span className="text-cyan-500 mt-0.5">›</span>
                           {s.startsWith('source:')
                             ? `Origin identified: ${formatSourceLabel(s.replace('source:', ''))}`
@@ -792,9 +781,9 @@ export default function ResultPage() {
                 )}
 
                 {result.caveat && (
-                  <div className="rounded-xl border border-slate-600/50 bg-slate-800/30 p-4">
-                    <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-1">Note</p>
-                    <p className="text-slate-400 text-sm">{result.caveat}</p>
+                  <div className="rounded-xl border border-border bg-secondary/30 p-4">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Note</p>
+                    <p className="text-muted-foreground text-sm">{result.caveat}</p>
                   </div>
                 )}
               </div>

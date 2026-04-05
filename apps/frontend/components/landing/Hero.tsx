@@ -2,349 +2,250 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Play, ShieldCheck, Zap, Globe } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Moon, ShieldCheck, Zap, Globe } from "lucide-react";
+import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
+import GuardVillager from "./GuardVillager";
 
-const SCAN_LABELS = [
-  { label: "Image Analyzed", color: "#00d4ff", x: "8%", y: "18%", delay: "1.2s" },
-  { label: "AI Artifact: GAN Fingerprint", color: "#f43f5e", x: "55%", y: "32%", delay: "2.0s" },
-  { label: "Confidence: 97.3%", color: "#10b981", x: "12%", y: "68%", delay: "2.8s" },
-];
-
-function ScannerPanel() {
-  const [phase, setPhase] = useState<"scanning" | "verdict">("scanning");
-  const [progress, setProgress] = useState(0);
-  const [showLabels, setShowLabels] = useState(false);
+function VillagerNightDecor() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          setPhase("verdict");
-          setShowLabels(true);
-          setTimeout(() => {
-            setPhase("scanning");
-            setProgress(0);
-            setShowLabels(false);
-          }, 4000);
-          return 100;
-        }
-        return p + 1.2;
-      });
-    }, 40);
-    return () => clearInterval(interval);
+    setMounted(true);
   }, []);
+
+  if (!mounted || resolvedTheme !== "dark") return null;
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden"
-      style={{
-        background: "linear-gradient(145deg, #0d0d1a 0%, #121220 100%)",
-        border: "1px solid rgba(0,212,255,0.15)",
-        boxShadow: "0 0 60px rgba(0,212,255,0.08), 0 40px 80px rgba(0,0,0,0.5)",
-      }}
+      className="pointer-events-none absolute inset-0 overflow-visible z-0"
+      aria-hidden
     >
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-ai" />
-          <div className="w-2.5 h-2.5 rounded-full bg-warn" />
-          <div className="w-2.5 h-2.5 rounded-full bg-verified" />
-        </div>
-        <span className="text-xs font-mono text-muted-foreground/50">
-          veritas-scanner v2.4.1
-        </span>
-        <div className="flex items-center gap-1.5">
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{
-              background: phase === "scanning" ? "#00d4ff" : "#10b981",
-              boxShadow: `0 0 6px ${phase === "scanning" ? "#00d4ff" : "#10b981"}`,
-              animation: "pulse-glow 2s ease-in-out infinite",
-            }}
-          />
-          <span className="text-xs font-mono" style={{ color: phase === "scanning" ? "#00d4ff" : "#10b981" }}>
-            {phase === "scanning" ? "SCANNING" : "COMPLETE"}
-          </span>
-        </div>
-      </div>
-
-      {/* Scanner viewport */}
-      <div className="relative scan-container" style={{ height: "260px" }}>
-        <div
-          className="absolute inset-0 bg-grid-sm"
-          style={{
-            background: `
-              radial-gradient(ellipse at 30% 40%, rgba(139,92,246,0.15) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 60%, rgba(0,212,255,0.1) 0%, transparent 50%),
-              #0a0a14
-            `,
-          }}
-        />
-
-        <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 260">
-          <ellipse cx="200" cy="110" rx="70" ry="85" fill="none" stroke="#8b5cf6" strokeWidth="0.5" />
-          <ellipse cx="175" cy="95" rx="12" ry="8" fill="#8b5cf6" opacity="0.3" />
-          <ellipse cx="225" cy="95" rx="12" ry="8" fill="#8b5cf6" opacity="0.3" />
-          <path d="M175 130 Q200 145 225 130" fill="none" stroke="#8b5cf6" strokeWidth="1" />
-          <line x1="100" y1="0" x2="300" y2="260" stroke="#00d4ff" strokeWidth="0.3" opacity="0.3" />
-          <line x1="0" y1="130" x2="400" y2="130" stroke="#00d4ff" strokeWidth="0.3" opacity="0.3" />
-          {[...Array(6)].map((_, i) => (
-            <circle key={i} cx={60 + i * 60} cy={20 + (i % 2) * 220} r="2" fill="#00d4ff" opacity="0.4" />
-          ))}
-        </svg>
-
-        {phase === "scanning" && <div className="scan-line" />}
-
-        {showLabels && (
-          <>
-            <div
-              className="absolute"
-              style={{
-                top: "15%", left: "35%", width: "30%", height: "55%",
-                border: "1px solid #f43f5e",
-                boxShadow: "0 0 12px rgba(244,63,94,0.3)",
-                animation: "reveal-up 0.4s ease forwards",
-              }}
-            >
-              <span
-                className="absolute -top-5 left-0 text-xs font-mono px-1.5 py-0.5 rounded"
-                style={{ background: "#f43f5e", color: "#fff", fontSize: "10px" }}
-              >
-                AI GENERATED
-              </span>
-            </div>
-            <div
-              className="absolute"
-              style={{
-                top: "55%", left: "10%", width: "20%", height: "20%",
-                border: "1px solid #00d4ff",
-                boxShadow: "0 0 10px rgba(0,212,255,0.3)",
-                animation: "reveal-up 0.4s ease 0.3s forwards",
-                opacity: 0,
-              }}
-            />
-          </>
-        )}
-
-        {showLabels && SCAN_LABELS.map((item, i) => (
-          <div
-            key={i}
-            className="absolute flex items-center gap-1.5 px-2 py-1 rounded-md"
-            style={{
-              top: item.y, left: item.x,
-              background: "rgba(7,7,14,0.9)",
-              border: `1px solid ${item.color}44`,
-              boxShadow: `0 0 10px ${item.color}22`,
-              animation: `reveal-up 0.5s ease ${item.delay} forwards`,
-              opacity: 0,
-              fontSize: "10px",
-              fontFamily: "monospace",
-              color: item.color,
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: item.color, boxShadow: `0 0 4px ${item.color}` }} />
-            {item.label}
-          </div>
-        ))}
-      </div>
-
-      {/* Status bar */}
-      <div className="px-4 py-3 border-t border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono text-muted-foreground">
-            {phase === "scanning" ? "Analyzing patterns..." : "Analysis complete"}
-          </span>
-          <span className="text-xs font-mono text-cyan">
-            {Math.min(100, Math.round(progress))}%
-          </span>
-        </div>
-        <div className="h-1 rounded-full overflow-hidden bg-secondary">
-          <div
-            className="h-full rounded-full transition-all duration-100"
-            style={{
-              width: `${progress}%`,
-              background: phase === "verdict"
-                ? "linear-gradient(90deg, #10b981, #00d4ff)"
-                : "linear-gradient(90deg, #00d4ff, #8b5cf6)",
-              boxShadow: "0 0 8px rgba(0,212,255,0.5)",
-            }}
-          />
-        </div>
-
-        {phase === "verdict" && (
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-muted-foreground">VERDICT</span>
-              <Badge variant="ai">AI GENERATED</Badge>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-mono text-muted-foreground">Model:</span>
-              <span className="text-xs font-mono text-secondary-foreground">SigLIP v1</span>
-            </div>
-          </div>
-        )}
-      </div>
+      <Moon
+        className="absolute -right-1 top-6 h-9 w-9 text-amber-200/80"
+        strokeWidth={1.35}
+      />
+      <span
+        className="absolute -right-3 top-[5.25rem] h-2 w-2 rounded-full bg-amber-100/75 shadow-[0_0_10px_rgba(253,230,138,0.55)]"
+      />
+      <span
+        className="absolute right-8 top-2 h-1.5 w-1.5 rounded-full bg-amber-100/60 shadow-[0_0_8px_rgba(253,230,138,0.45)]"
+      />
+      <span
+        className="absolute -left-2 top-14 h-1.5 w-1.5 rounded-full bg-amber-100/55 shadow-[0_0_8px_rgba(253,230,138,0.4)]"
+      />
+      <span
+        className="absolute left-4 top-24 h-1 w-1 rounded-full bg-amber-100/50 shadow-[0_0_6px_rgba(253,230,138,0.35)]"
+      />
     </div>
   );
 }
 
-export default function Hero() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+const STATS = [
+  { value: 94.4, suffix: "%", label: "Detection accuracy", decimals: 1 },
+  { value: 4, suffix: "", label: "AI modalities", decimals: 0 },
+  { value: 2, suffix: "s", label: "Avg. response", decimals: 0, prefix: "<" },
+];
+
+function Counter({
+  value,
+  suffix,
+  decimals,
+  prefix = "",
+}: {
+  value: number;
+  suffix: string;
+  decimals: number;
+  prefix?: string;
+}) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started) setStarted(true);
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    const duration = 1600;
+    const steps = 50;
+    const increment = value / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current = Math.min(current + increment, value);
+      setCount(current);
+      if (current >= value) clearInterval(timer);
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [started, value]);
 
   return (
+    <span ref={ref}>
+      {prefix}
+      {count.toFixed(decimals)}
+      {suffix}
+    </span>
+  );
+}
+
+const TRUST_ITEMS = [
+  { icon: ShieldCheck, label: "Zero data retention" },
+  { icon: Zap, label: "Real-time detection" },
+  { icon: Globe, label: "REST API ready" },
+];
+
+export default function Hero() {
+  return (
     <section
-      className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-grid"
-      style={{ background: "#07070e" }}
+      className="relative min-h-screen flex items-center pt-[64px] overflow-hidden"
+      style={{ background: "var(--background)" }}
     >
-      {/* Background blobs */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 20% 20%, rgba(0,212,255,0.06) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(139,92,246,0.03) 0%, transparent 70%)
-          `,
-        }}
-      />
-
-      <div
-        className="absolute inset-0 pointer-events-none bg-grid"
-        style={{ maskImage: "radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%)" }}
-      />
-
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full py-20">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left — Copy */}
-          <div
-            className="flex flex-col gap-6"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(24px)",
-              transition: "opacity 0.8s ease, transform 0.8s ease",
-            }}
-          >
+        <div className="flex items-center gap-12 lg:gap-20">
+          {/* Left — text content */}
+          <div className="flex-1 flex flex-col gap-7">
             {/* Badge */}
-            <div className="inline-flex self-start">
-              <Badge variant="cyan" className="gap-2 py-1 px-3">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="self-start"
+            >
+              <span className="badge-glass">
                 <span
-                  className="w-1.5 h-1.5 rounded-full bg-cyan flex-shrink-0"
-                  style={{ animation: "pulse-glow 2s ease-in-out infinite" }}
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{
+                    background: "var(--color-cyan)",
+                    boxShadow: "0 0 6px var(--color-cyan-glow)",
+                    animation: "pulse-glow 2s ease-in-out infinite",
+                  }}
                 />
                 Multimodal AI Detection Platform
-              </Badge>
-            </div>
+              </span>
+            </motion.div>
 
             {/* Headline */}
-            <h1
-              className="text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight"
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.21, 0.47, 0.32, 0.98] as const }}
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              <span className="text-foreground">Detect AI Content</span>
+              <span style={{ color: "var(--foreground)" }}>Detect AI Content</span>
               <br />
-              <span className="gradient-text-cyan">Before It Deceives</span>
-            </h1>
+              <span className="gradient-text">Before It Deceives</span>
+            </motion.h1>
 
             {/* Subheadline */}
-            <p className="text-lg leading-relaxed max-w-xl text-muted-foreground">
-              VeritasAI deploys four specialized detection models — across images, video, audio, and documents —
-              with a self-healing fallback architecture that{" "}
-              <span className="text-secondary-foreground">always delivers a verdict</span>.
-            </p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+              className="text-lg leading-relaxed max-w-xl"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              GaulemGuard deploys four specialized detection models — across images, video, audio, and documents — with a self-healing fallback architecture that{" "}
+              <span style={{ color: "var(--foreground)", fontWeight: 500 }}>always delivers a verdict</span>.
+            </motion.p>
+
+            {/* CTA buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+              className="flex items-center gap-3 flex-wrap"
+            >
+              <Link href="/login" className="btn-primary" style={{ padding: "13px 28px", fontSize: "15px" }}>
+                Start Detecting <ArrowRight size={16} />
+              </Link>
+            </motion.div>
 
             {/* Stats row */}
-            <div className="flex items-center gap-6 pt-2">
-              {[
-                { value: "94.4%", label: "Image accuracy", color: "#00d4ff" },
-                { value: "4", label: "Detection modalities", color: "#8b5cf6" },
-                { value: "<2s", label: "Avg. response time", color: "#10b981" },
-              ].map((stat) => (
-                <div key={stat.label} className="flex flex-col gap-0.5">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+              className="flex items-center gap-8 sm:gap-10 pt-2"
+            >
+              {STATS.map((stat, i) => (
+                <div key={stat.label} className="flex flex-col gap-1">
                   <span
-                    className="text-2xl font-bold"
-                    style={{ color: stat.color, fontFamily: "var(--font-display)" }}
+                    className="text-3xl sm:text-4xl font-bold tabular-nums"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      background:
+                        i === 0
+                          ? "linear-gradient(135deg, var(--color-purple), var(--color-cyan))"
+                          : i === 1
+                          ? "linear-gradient(135deg, var(--color-cyan), var(--color-purple))"
+                          : "linear-gradient(135deg, var(--color-verified), var(--color-cyan))",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
                   >
-                    {stat.value}
+                    <Counter
+                      value={stat.value}
+                      suffix={stat.suffix}
+                      decimals={stat.decimals}
+                      prefix={stat.prefix}
+                    />
                   </span>
-                  <span className="text-xs text-muted-foreground/70">
+                  <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                     {stat.label}
                   </span>
                 </div>
               ))}
-            </div>
-
-            {/* CTAs */}
-            <div className="flex items-center gap-4 pt-2">
-              <Link href="/login" className="btn-primary">
-                Start Detecting
-                <ArrowRight size={16} />
-              </Link>
-              <button className="btn-ghost flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white/5 border border-border">
-                  <Play size={10} className="text-foreground ml-px" />
-                </div>
-                Watch Demo
-              </button>
-            </div>
+            </motion.div>
 
             {/* Trust badges */}
-            <div className="flex items-center gap-4 pt-1 flex-wrap">
-              {[
-                { icon: ShieldCheck, label: "Zero data retention" },
-                { icon: Zap, label: "Real-time detection" },
-                { icon: Globe, label: "REST API ready" },
-              ].map(({ icon: Icon, label }) => (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.55 }}
+              className="flex items-center gap-5 flex-wrap"
+            >
+              {TRUST_ITEMS.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <Icon size={13} className="text-muted-foreground/60" />
-                  <span className="text-xs text-muted-foreground/60">
+                  <Icon size={12} style={{ color: "var(--muted-foreground)", opacity: 0.6 }} />
+                  <span className="text-xs" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
                     {label}
                   </span>
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right — Scanner panel */}
-          <div
-            className="relative"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(32px)",
-              transition: "opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s",
-            }}
+          {/* Right — Guard Villager character (+ moon & stars in dark mode) */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.35, ease: [0.21, 0.47, 0.32, 0.98] as const }}
+            className="hidden lg:flex items-center justify-center flex-shrink-0 relative w-[200px] min-h-[280px]"
+            style={{ animation: "float 6s ease-in-out infinite" }}
           >
-            <ScannerPanel />
-
-            {/* Floating accuracy card */}
-            <div
-              className="absolute -bottom-6 -left-6 hidden lg:flex items-center gap-3 px-4 py-3 rounded-xl"
-              style={{
-                background: "rgba(13,13,26,0.95)",
-                border: "1px solid rgba(16,185,129,0.2)",
-                boxShadow: "0 0 20px rgba(16,185,129,0.1)",
-                backdropFilter: "blur(10px)",
-                animation: "float 5s ease-in-out infinite",
-              }}
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-verified/15">
-                <ShieldCheck size={16} className="text-verified" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-verified">Verified Authentic</div>
-                <div className="text-xs text-muted-foreground">Human-created content</div>
-              </div>
+            <VillagerNightDecor />
+            <div className="relative z-10">
+              <GuardVillager />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Bottom fade */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, transparent, #07070e)" }}
+        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, var(--background))" }}
       />
     </section>
   );

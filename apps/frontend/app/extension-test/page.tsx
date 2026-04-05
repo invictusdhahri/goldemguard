@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, FlaskConical, ImageIcon, Video, FileText, ExternalLink } from 'lucide-react'
-import InteractiveBackground from '@/components/InteractiveBackground'
-
 export const metadata: Metadata = {
   title: 'Extension test feed — VeritasAI',
   description:
@@ -70,19 +68,6 @@ const DOCS = [
 export default function ExtensionTestPage() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <InteractiveBackground />
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl"
-          style={{ background: 'rgba(0,212,255,0.04)' }}
-        />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'rgba(139,92,246,0.04)' }}
-        />
-      </div>
-
       <div className="max-w-3xl mx-auto px-4 py-10 relative z-10 pb-24">
         <div className="mb-8">
           <Link
@@ -98,9 +83,9 @@ export default function ExtensionTestPage() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold"
             style={{
-              background: 'rgba(0,212,255,0.08)',
-              border: '1px solid rgba(0,212,255,0.2)',
-              color: '#00d4ff',
+              background: 'color-mix(in srgb, var(--color-cyan) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-cyan) 20%, transparent)',
+              color: 'var(--color-cyan)',
             }}
           >
             <FlaskConical size={12} />
@@ -124,8 +109,8 @@ export default function ExtensionTestPage() {
 
         {/* Standalone post-style block (mimics a social card) */}
         <section
-          className="rounded-2xl p-6 mb-8 glass-card"
-          style={{ border: '1px solid rgba(0,212,255,0.12)' }}
+          className="rounded-2xl p-6 mb-8 liquid-glass-card"
+          style={{ borderColor: 'color-mix(in srgb, var(--color-cyan) 15%, transparent)' }}
         >
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
             Synthetic post (for scraper)
@@ -135,8 +120,8 @@ export default function ExtensionTestPage() {
             Officials deny the link. #breaking
           </p>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10">text-only</span>
-            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10">claim-like</span>
+            <span className="px-2 py-0.5 rounded-md bg-secondary border border-border">text-only</span>
+            <span className="px-2 py-0.5 rounded-md bg-secondary border border-border">claim-like</span>
           </div>
         </section>
 
@@ -150,8 +135,8 @@ export default function ExtensionTestPage() {
           {IMAGES.map((img) => (
             <article
               key={img.id}
-              className="rounded-2xl overflow-hidden glass-card"
-              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              className="rounded-2xl overflow-hidden liquid-glass-card"
+              style={{ borderColor: 'var(--glass-border-subtle)' }}
             >
               <figure className="bg-black/30">
                 {/* eslint-disable-next-line @next/next/no-img-element -- test page uses third-party URLs */}
@@ -182,8 +167,8 @@ export default function ExtensionTestPage() {
           {VIDEOS.map((v) => (
             <article
               key={v.id}
-              className="rounded-2xl overflow-hidden glass-card"
-              style={{ border: '1px solid rgba(139,92,246,0.15)' }}
+              className="rounded-2xl overflow-hidden liquid-glass-card"
+              style={{ borderColor: 'color-mix(in srgb, var(--color-purple) 15%, transparent)' }}
             >
               <video
                 className="w-full bg-black max-h-[360px]"
@@ -210,8 +195,8 @@ export default function ExtensionTestPage() {
         </h2>
 
         <article
-          className="rounded-2xl p-6 glass-card mb-10"
-          style={{ border: '1px solid rgba(245,158,11,0.15)' }}
+          className="rounded-2xl p-6 liquid-glass-card mb-10"
+          style={{ borderColor: 'color-mix(in srgb, var(--color-warn) 15%, transparent)' }}
         >
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
             The extension&apos;s generic scraper may surface these as activity items. Full PDF analysis still
@@ -236,10 +221,10 @@ export default function ExtensionTestPage() {
           </ul>
         </article>
 
-        <footer className="text-center text-xs text-muted-foreground border-t border-white/10 pt-8">
+        <footer className="text-center text-xs text-muted-foreground border-t border-border pt-8">
           <p>
             Open this page on{' '}
-            <code className="text-cyan/90 bg-white/5 px-1.5 py-0.5 rounded">http://localhost:3001/extension-test</code>{' '}
+            <code className="text-cyan/90 bg-secondary px-1.5 py-0.5 rounded">http://localhost:3001/extension-test</code>{' '}
             (or your deployed URL), then use the VeritasAI extension popup on this tab.
           </p>
         </footer>

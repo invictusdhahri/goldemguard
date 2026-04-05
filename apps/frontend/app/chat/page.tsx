@@ -22,7 +22,6 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import Link from 'next/link'
-import InteractiveBackground from '../../components/InteractiveBackground'
 import { useAuth } from '@/hooks/useAuth'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -91,7 +90,7 @@ function ContextIcon({ verdict }: { verdict: string }) {
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#f43f5e'
   return (
-    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+    <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
       <div
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${score}%`, background: color }}
@@ -104,7 +103,7 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
   const pct = Math.round(confidence * 100)
   const color = pct >= 75 ? '#f43f5e' : pct <= 35 ? '#10b981' : '#f59e0b'
   return (
-    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+    <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
       <div
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, background: color }}
@@ -350,14 +349,6 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <InteractiveBackground />
-
-      {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(0,212,255,0.05)' }} />
-        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full blur-3xl" style={{ background: 'rgba(139,92,246,0.05)' }} />
-      </div>
-
       <div className="max-w-3xl mx-auto px-4 py-12 relative z-10">
 
         {/* Back link */}
@@ -373,8 +364,7 @@ export default function ChatPage() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4"
-            style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff' }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4 bg-cyan/10 border border-cyan/20 text-cyan">
             <Sparkles size={12} />
             Contextual Fact-Check
           </div>
@@ -395,7 +385,7 @@ export default function ChatPage() {
         )}
 
         {/* ── Input form ── */}
-        <Card className="mb-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)' }}>
+        <Card className="mb-4 overflow-hidden liquid-glass-card">
           <CardContent className="p-6 space-y-5">
 
             {/* Context textarea */}
@@ -409,13 +399,7 @@ export default function ChatPage() {
                 onChange={(e) => setContext(e.target.value)}
                 placeholder="Paste a caption, headline, social media post, or any claim you want to verify…"
                 rows={3}
-                className="w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 resize-none outline-none transition-all duration-200"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.4)' }}
-                onBlur={(e)  => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                className="w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 resize-none outline-none transition-all duration-200 bg-input border border-border focus:border-cyan/40"
               />
             </div>
 
@@ -429,8 +413,7 @@ export default function ChatPage() {
 
               {file ? (
                 <div
-                  className="relative rounded-xl overflow-hidden"
-                  style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)' }}
+                  className="relative rounded-xl overflow-hidden bg-purple/5 border border-purple/20"
                 >
                   {file && !mediaPreviewUrl && (
                     <div className="flex items-center justify-center min-h-[140px] bg-black/30">
@@ -459,7 +442,7 @@ export default function ChatPage() {
                       />
                     </div>
                   )}
-                  <div className="px-4 py-3 flex items-center gap-3 border-t border-white/5">
+                  <div className="px-4 py-3 flex items-center gap-3 border-t border-border">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{file.name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -482,15 +465,10 @@ export default function ChatPage() {
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
                   onDragLeave={() => setIsDragging(false)}
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-xl p-8 text-center cursor-pointer transition-all duration-200"
-                  style={{
-                    background:   isDragging ? 'rgba(0,212,255,0.04)' : 'rgba(255,255,255,0.02)',
-                    border:       `1px dashed ${isDragging ? 'rgba(0,212,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                  }}
+                  className={`rounded-xl p-8 text-center cursor-pointer transition-all duration-200 bg-input border border-dashed ${isDragging ? 'border-cyan scale-[1.01]' : 'border-border hover:border-cyan/40'}`}
                 >
                   <div className="flex justify-center mb-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.15)' }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan/10 border border-cyan/20">
                       <Upload className="w-6 h-6 text-cyan" strokeWidth={1.5} />
                     </div>
                   </div>
@@ -499,12 +477,10 @@ export default function ChatPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">or click to browse · max 100 MB</p>
                   <div className="flex justify-center gap-2 mt-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs"
-                      style={{ background: 'rgba(0,212,255,0.06)', color: '#00d4ff' }}>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-cyan/5 text-cyan border border-cyan/15">
                       <ImageIcon size={10} /> JPG / PNG / WebP
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs"
-                      style={{ background: 'rgba(139,92,246,0.06)', color: '#a78bfa' }}>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-purple/5 text-purple border border-purple/15">
                       <Video size={10} /> MP4 / MOV / WebM
                     </span>
                   </div>
@@ -532,13 +508,7 @@ export default function ChatPage() {
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://example.com/article"
-                className="w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-all duration-200"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.4)' }}
-                onBlur={(e)  => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                className="w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-all duration-200 bg-input border border-border focus:border-cyan/40"
               />
             </div>
 
@@ -550,10 +520,10 @@ export default function ChatPage() {
                 className="relative group w-full py-3.5 rounded-xl text-base font-bold transition-all duration-200 overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background: canSubmit
-                    ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'
-                    : 'rgba(255,255,255,0.06)',
-                  color: canSubmit ? '#07070e' : '#64748b',
-                  boxShadow: canSubmit ? '0 4px 24px rgba(0,212,255,0.25)' : 'none',
+                    ? 'linear-gradient(135deg, var(--color-cyan) 0%, var(--color-cyan-dim) 100%)'
+                    : 'var(--secondary)',
+                  color: canSubmit ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                  boxShadow: canSubmit ? '0 4px 24px var(--color-cyan-glow)' : 'none',
                 }}
               >
                 {analyzing ? (
@@ -577,15 +547,14 @@ export default function ChatPage() {
           <div className="space-y-5 mt-8">
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-border" />
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Analysis results</span>
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-border" />
             </div>
 
             {/* Submitted claim */}
             {context.trim() && (
-              <div className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-xl px-4 py-3 text-sm bg-muted border border-border">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Submitted claim</p>
                 <p className="text-foreground leading-relaxed">&ldquo;{context.trim()}&rdquo;</p>
               </div>
@@ -593,27 +562,13 @@ export default function ChatPage() {
 
             {/* Top summary: FAKE | REAL | UNCLEAR */}
             <div
-              className="rounded-2xl p-6 sm:p-8 text-center space-y-3"
-              style={{
-                background:
-                  overall.headline === 'FAKE'
-                    ? 'linear-gradient(145deg, rgba(244,63,94,0.12) 0%, rgba(7,7,14,0.95) 55%)'
-                    : overall.headline === 'REAL'
-                      ? 'linear-gradient(145deg, rgba(16,185,129,0.1) 0%, rgba(7,7,14,0.95) 55%)'
-                      : 'linear-gradient(145deg, rgba(245,158,11,0.1) 0%, rgba(7,7,14,0.95) 55%)',
-                border:
-                  overall.headline === 'FAKE'
-                    ? '1px solid rgba(244,63,94,0.35)'
-                    : overall.headline === 'REAL'
-                      ? '1px solid rgba(16,185,129,0.35)'
-                      : '1px solid rgba(245,158,11,0.35)',
-                boxShadow:
-                  overall.headline === 'FAKE'
-                    ? '0 0 40px rgba(244,63,94,0.12)'
-                    : overall.headline === 'REAL'
-                      ? '0 0 40px rgba(16,185,129,0.1)'
-                      : '0 0 40px rgba(245,158,11,0.08)',
-              }}
+              className={`rounded-2xl p-6 sm:p-8 text-center space-y-3 border ${
+                overall.headline === 'FAKE'
+                  ? 'border-ai/35 bg-ai/8'
+                  : overall.headline === 'REAL'
+                    ? 'border-verified/35 bg-verified/8'
+                    : 'border-warn/35 bg-warn/8'
+              }`}
             >
               <p
                 className="text-4xl sm:text-5xl font-black tracking-tight"
@@ -650,12 +605,11 @@ export default function ChatPage() {
 
             {/* Why it&apos;s misleading (not AI — context and/or source) */}
             {overall.showMisleadingDetail && misleadingExplain && (
-              <div className="rounded-xl p-5 space-y-2"
-                style={{ background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.22)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest text-rose-300/90">Why it&apos;s misleading</p>
+              <div className="rounded-xl p-5 space-y-2 bg-ai/5 border border-ai/20">
+                <p className="text-xs font-bold uppercase tracking-widest text-ai/90">Why it&apos;s misleading</p>
                 <p className="text-sm text-foreground leading-relaxed">{misleadingExplain.primary}</p>
                 {misleadingExplain.secondary && (
-                  <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-white/10 mt-2">
+                  <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border mt-2">
                     Source note: {misleadingExplain.secondary}
                   </p>
                 )}
@@ -664,8 +618,7 @@ export default function ChatPage() {
 
             {/* What the content shows */}
             {result.contextual && !result.contextual.error && result.contextual.image_description && (
-              <div className="rounded-xl p-5 space-y-2"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-5 space-y-2 bg-muted border border-border">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <Eye size={12} className="text-cyan" />
                   What the content actually shows
@@ -676,8 +629,7 @@ export default function ChatPage() {
 
             {/* Signals + sources */}
             {result.contextual && !result.contextual.error && result.contextual.signals.length > 0 && (
-              <div className="rounded-xl p-5 space-y-3"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-5 space-y-3 bg-muted border border-border">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Key signals</p>
                 <div className="flex flex-wrap gap-2">
                   {result.contextual.signals.map((signal, i) => (
@@ -688,8 +640,7 @@ export default function ChatPage() {
             )}
 
             {result.contextual && !result.contextual.error && result.contextual.sources.length > 0 && (
-              <div className="rounded-xl p-5 space-y-3"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-5 space-y-3 bg-muted border border-border">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sources</p>
                 <div className="flex flex-col gap-1.5">
                   {result.contextual.sources.map((src, i) => {
@@ -716,9 +667,9 @@ export default function ChatPage() {
             {(result.authenticity || result.contextual) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {result.authenticity && (
-                  <div className="rounded-xl p-5 space-y-3" style={{
-                    background: result.authenticity.error ? 'rgba(255,255,255,0.03)' : verdictBg(result.authenticity.verdict),
-                    border:     `1px solid ${result.authenticity.error ? 'rgba(255,255,255,0.08)' : verdictBorder(result.authenticity.verdict)}`,
+                  <div className="rounded-xl p-5 space-y-3 border" style={{
+                    background: result.authenticity.error ? 'var(--muted)' : verdictBg(result.authenticity.verdict),
+                    borderColor: result.authenticity.error ? 'var(--border)' : verdictBorder(result.authenticity.verdict),
                   }}>
                     <div className="flex items-center gap-2">
                       {result.authenticity.error
@@ -749,9 +700,9 @@ export default function ChatPage() {
                 )}
 
                 {result.contextual && (
-                  <div className="rounded-xl p-5 space-y-3" style={{
-                    background: result.contextual.error ? 'rgba(255,255,255,0.03)' : verdictBg(result.contextual.verdict),
-                    border:     `1px solid ${result.contextual.error ? 'rgba(255,255,255,0.08)' : verdictBorder(result.contextual.verdict)}`,
+                  <div className="rounded-xl p-5 space-y-3 border" style={{
+                    background: result.contextual.error ? 'var(--muted)' : verdictBg(result.contextual.verdict),
+                    borderColor: result.contextual.error ? 'var(--border)' : verdictBorder(result.contextual.verdict),
                   }}>
                     <div className="flex items-center gap-2">
                       {result.contextual.error
@@ -783,10 +734,9 @@ export default function ChatPage() {
             )}
 
             {result.source && (
-              <div className="rounded-xl p-5 space-y-3"
-                style={{
-                  background: result.source.error ? 'rgba(255,255,255,0.03)' : verdictBg(result.source.verdict),
-                  border:     `1px solid ${result.source.error ? 'rgba(255,255,255,0.08)' : verdictBorder(result.source.verdict)}`,
+              <div className="rounded-xl p-5 space-y-3 border" style={{
+                  background: result.source.error ? 'var(--muted)' : verdictBg(result.source.verdict),
+                  borderColor: result.source.error ? 'var(--border)' : verdictBorder(result.source.verdict),
                 }}>
                 <div className="flex items-center gap-2">
                   <Globe className="w-5 h-5 text-cyan" />
@@ -815,8 +765,7 @@ export default function ChatPage() {
             )}
 
             {/* Scores at bottom */}
-            <div className="rounded-xl p-5 space-y-5"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="rounded-xl p-5 space-y-5 bg-muted border border-border">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Detailed scores</p>
 
               {result.authenticity && !result.authenticity.error && (

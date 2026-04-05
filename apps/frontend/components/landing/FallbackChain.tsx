@@ -1,249 +1,195 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-import { type LucideProps, Cpu, CheckCircle2, AlertTriangle, RotateCcw, ShieldCheck, Upload } from "lucide-react";
-import type { ForwardRefExoticComponent, RefAttributes } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { Upload, Cpu, RotateCcw, ShieldCheck } from "lucide-react";
+import FadeInUp from "./FadeInUp";
 
-type LucideIcon = ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
-
-interface Step {
-  id: string;
-  label: string;
-  sublabel: string;
-  icon: LucideIcon;
-  color: string;
-  status: string;
-}
-
-const STEPS: Step[] = [
+const STEPS = [
   {
-    id: "upload",
-    label: "Content Upload",
-    sublabel: "Image / Video / Audio / Text",
+    number: "01",
     icon: Upload,
-    color: "#00d4ff",
-    status: "done",
+    title: "Upload Content",
+    description:
+      "Submit any file type — image, video, audio, or document — via the REST API or web interface. No preprocessing required.",
+    accentVar: "--color-cyan",
   },
   {
-    id: "primary",
-    label: "Primary Model",
-    sublabel: "SigLIP / GenConViT / AASIST3",
+    number: "02",
     icon: Cpu,
-    color: "#8b5cf6",
-    status: "active",
+    title: "Primary Detection",
+    description:
+      "Our specialized model for your content type runs an inference pass, analyzing semantic patterns and artifact signatures.",
+    accentVar: "--color-purple",
   },
   {
-    id: "fallback",
-    label: "Fallback Layer",
-    sublabel: "Automatic on timeout / low confidence",
+    number: "03",
     icon: RotateCcw,
-    color: "#f59e0b",
-    status: "standby",
+    title: "Auto-Fallback",
+    description:
+      "If the primary model times out or returns low confidence, the system automatically reroutes to a backup model. Zero dropped requests.",
+    accentVar: "--color-warn",
   },
   {
-    id: "verdict",
-    label: "Final Verdict",
-    sublabel: "Confidence + attribution map",
+    number: "04",
     icon: ShieldCheck,
-    color: "#10b981",
-    status: "done",
+    title: "Final Verdict",
+    description:
+      "Receive a confidence score, attribution map, and structured verdict in under 2 seconds. Always a result, always explainable.",
+    accentVar: "--color-verified",
   },
 ];
 
-const FALLBACK_SCENARIOS = [
-  { trigger: "Model timeout (>5s)", action: "Route to backup endpoint", outcome: "Verdict delivered" },
-  { trigger: "Low confidence (<60%)", action: "Run secondary model", outcome: "Ensemble verdict" },
-  { trigger: "API rate limit hit", action: "Queue + retry with fallback", outcome: "No dropped requests" },
-];
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
+
+const stepItem = {
+  hidden: { opacity: 0, y: 28 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as const } },
+};
 
 export default function FallbackChain() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-    const timer = setInterval(() => {
-      setActiveStep((s) => (s + 1) % STEPS.length);
-    }, 1800);
-    return () => clearInterval(timer);
-  }, [visible]);
-
   return (
     <section
       id="how-it-works"
-      ref={ref}
-      className="relative py-28 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #07070e 0%, #0a0a12 50%, #07070e 100%)" }}
+      className="relative section-padding overflow-hidden"
+      style={{ background: "var(--background)" }}
     >
+      {/* Glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `
-            radial-gradient(ellipse 50% 40% at 20% 60%, rgba(0,212,255,0.04) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 40% at 80% 40%, rgba(139,92,246,0.05) 0%, transparent 60%)
-          `,
+          background:
+            "radial-gradient(ellipse 50% 60% at 20% 50%, var(--color-purple-glow), transparent 60%), " +
+            "radial-gradient(ellipse 40% 50% at 80% 50%, var(--color-cyan-glow), transparent 60%)",
+          opacity: 0.35,
         }}
       />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
-        {/* Section header */}
-        <div className="flex flex-col items-center text-center gap-4 mb-16">
-          <Badge variant="cyan" className="py-1 px-3">
-            Always-On Architecture
-          </Badge>
+        {/* Header */}
+        <FadeInUp className="flex flex-col items-center text-center gap-4 mb-16">
+          <span className="badge-glass">Always-On Architecture</span>
           <h2
-            className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
+            className="text-4xl lg:text-5xl font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            A Verdict,{" "}
-            <span className="gradient-text-cyan">Every Single Time</span>
+            <span style={{ color: "var(--foreground)" }}>A Verdict,</span>{" "}
+            <span className="gradient-text">Every Single Time</span>
           </h2>
-          <p className="text-base max-w-xl text-muted-foreground">
-            Our self-healing fallback architecture automatically reroutes to backup models
-            so detection never fails — even when primary models are overloaded or uncertain.
+          <p className="text-base max-w-xl" style={{ color: "var(--muted-foreground)" }}>
+            Self-healing fallback architecture automatically reroutes to backup models so detection never fails — even when primary models are overloaded.
           </p>
-        </div>
+        </FadeInUp>
 
-        {/* Pipeline visualization */}
-        <Card className="p-8 mb-8 backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
-          {/* Desktop pipeline */}
-          <div className="hidden md:flex items-center justify-between gap-2">
-            {STEPS.map((step, i) => {
-              const isActive = activeStep === i;
-              const isPast = activeStep > i;
-              const Icon = step.icon;
-
-              return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-3 flex-shrink-0" style={{ minWidth: "120px" }}>
-                    <div
-                      className="relative w-14 h-14 rounded-xl flex items-center justify-center text-xl transition-all duration-500"
-                      style={{
-                        background: isActive ? `${step.color}20` : isPast ? `${step.color}0d` : "rgba(255,255,255,0.03)",
-                        border: `1px solid ${isActive ? step.color + "50" : isPast ? step.color + "25" : "rgba(255,255,255,0.06)"}`,
-                        boxShadow: isActive ? `0 0 20px ${step.color}30` : "none",
-                        transform: isActive ? "scale(1.08)" : "scale(1)",
-                      }}
-                    >
-                      <Icon size={22} style={{ color: isActive ? step.color : isPast ? step.color + "88" : "#475569", transition: "color 0.5s ease" }} />
-                      {isActive && (
-                        <span
-                          className="absolute inset-0 rounded-xl"
-                          style={{ animation: "pulse-glow 1.5s ease-in-out infinite", border: `1px solid ${step.color}`, opacity: 0.4 }}
-                        />
-                      )}
-                    </div>
-
-                    <div className="text-center">
-                      <div
-                        className="text-sm font-semibold mb-0.5 transition-colors duration-500"
-                        style={{ color: isActive ? "#e2e8f0" : isPast ? "#94a3b8" : "#475569", fontFamily: "var(--font-display)" }}
-                      >
-                        {step.label}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{step.sublabel}</div>
-                    </div>
-
-                    {isPast && <CheckCircle2 size={14} style={{ color: step.color, opacity: 0.7 }} />}
-                  </div>
-
-                  {i < STEPS.length - 1 && (
-                    <div className="flex-1 mx-4 flex flex-col items-center gap-1.5">
-                      <div className="pipeline-line w-full" />
-                      {i === 1 && (
-                        <Badge variant="warning" className="text-[9px] py-0.5 px-1.5 gap-1">
-                          <AlertTriangle size={9} />
-                          auto-fallback
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Mobile pipeline (vertical) */}
-          <div className="flex md:hidden flex-col gap-0">
-            {STEPS.map((step, i) => {
-              const isActive = activeStep === i;
-              const Icon = step.icon;
-              return (
-                <div key={step.id} className="flex items-start gap-4">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500"
-                      style={{
-                        background: isActive ? `${step.color}20` : "rgba(255,255,255,0.03)",
-                        border: `1px solid ${isActive ? step.color + "50" : "rgba(255,255,255,0.06)"}`,
-                        boxShadow: isActive ? `0 0 16px ${step.color}30` : "none",
-                      }}
-                    >
-                      <Icon size={16} style={{ color: isActive ? step.color : "#475569" }} />
-                    </div>
-                    {i < STEPS.length - 1 && (
-                      <div className="w-px h-8 my-1 bg-cyan/15" />
-                    )}
-                  </div>
-                  <div className="pt-2 pb-6">
-                    <div className="text-sm font-semibold" style={{ color: isActive ? "#e2e8f0" : "#64748b", fontFamily: "var(--font-display)" }}>
-                      {step.label}
-                    </div>
-                    <div className="text-xs mt-0.5 text-muted-foreground">{step.sublabel}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-
-        {/* Fallback scenarios */}
-        <div
-          className="grid md:grid-cols-3 gap-4"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s",
-          }}
+        {/* Steps */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-60px" }}
         >
-          {FALLBACK_SCENARIOS.map((scenario, i) => (
-            <Card key={i} className="p-5 flex flex-col gap-3 backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
-              <div className="flex items-start gap-2">
-                <AlertTriangle size={14} className="text-warn flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-semibold text-foreground">Trigger: </span>
-                  <span className="text-xs text-muted-foreground">{scenario.trigger}</span>
+          {STEPS.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <motion.div key={step.number} variants={stepItem} className="relative">
+                {/* Connector line on desktop */}
+                {i < STEPS.length - 1 && (
+                  <div
+                    className="hidden lg:block absolute top-8 left-[calc(50%+32px)] right-0 h-px z-0"
+                    style={{
+                      background: "linear-gradient(to right, var(--border), transparent)",
+                    }}
+                  />
+                )}
+
+                <div className="liquid-glass-card p-6 flex flex-col gap-4 h-full relative z-10">
+                  {/* Number + icon */}
+                  <div className="flex items-start justify-between">
+                    {/* Icon circle */}
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        background: `color-mix(in srgb, var(${step.accentVar}) 12%, transparent)`,
+                        border: `1px solid color-mix(in srgb, var(${step.accentVar}) 22%, transparent)`,
+                      }}
+                    >
+                      <Icon size={22} style={{ color: `var(${step.accentVar})` }} />
+                    </div>
+
+                    {/* Step number */}
+                    <span
+                      className="text-4xl font-bold opacity-15 select-none"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        color: `var(${step.accentVar})`,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {step.number}
+                    </span>
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex flex-col gap-2">
+                    <h3
+                      className="font-semibold text-[15px]"
+                      style={{ color: "var(--foreground)", fontFamily: "var(--font-display)" }}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                      {step.description}
+                    </p>
+                  </div>
+
+                  {/* Bottom accent line */}
+                  <div
+                    className="mt-auto h-px rounded-full"
+                    style={{
+                      background: `linear-gradient(to right, var(${step.accentVar}), transparent)`,
+                      opacity: 0.4,
+                    }}
+                  />
                 </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {/* Bottom stat strip */}
+        <FadeInUp delay={0.4} className="mt-12">
+          <div
+            className="liquid-glass-card p-6 flex flex-wrap items-center justify-center gap-8"
+          >
+            {[
+              { value: "99.9%", label: "Uptime SLA" },
+              { value: "<2s", label: "Avg. verdict time" },
+              { value: "0", label: "Dropped requests" },
+              { value: "4", label: "Fallback layers" },
+            ].map((item) => (
+              <div key={item.label} className="flex flex-col items-center gap-1 px-4">
+                <span
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    background: "linear-gradient(135deg, var(--color-purple), var(--color-cyan))",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {item.value}
+                </span>
+                <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                  {item.label}
+                </span>
               </div>
-              <div className="flex items-start gap-2">
-                <RotateCcw size={14} className="text-cyan flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-semibold text-foreground">Action: </span>
-                  <span className="text-xs text-muted-foreground">{scenario.action}</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} className="text-verified flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-semibold text-foreground">Outcome: </span>
-                  <span className="text-xs text-verified">{scenario.outcome}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        </FadeInUp>
       </div>
     </section>
   );

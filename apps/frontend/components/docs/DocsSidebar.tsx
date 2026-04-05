@@ -23,7 +23,7 @@ export function DocsSidebar({
               'block rounded-lg px-3 py-2 text-sm transition-colors',
               active
                 ? 'bg-cyan/15 font-medium text-cyan'
-                : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
             )}
           >
             {item.label}
@@ -51,7 +51,7 @@ export function DocsMobileNav({
               'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
               active
                 ? 'border-cyan/40 bg-cyan/15 text-cyan'
-                : 'border-border bg-obsidian-200/50 text-slate-400',
+                : 'border-border bg-secondary/50 text-muted-foreground',
             )}
           >
             {item.label}

@@ -16,15 +16,15 @@ const badgeVariants = cva(
         outline:
           "text-foreground border-border",
         cyan:
-          "border-cyan/20 bg-cyan/10 text-cyan",
+          "text-[color:var(--color-cyan)] border-[color:var(--color-cyan)]/20 bg-[color:var(--color-cyan)]/10",
         purple:
-          "border-purple/20 bg-purple/10 text-purple",
+          "text-[color:var(--color-purple)] border-[color:var(--color-purple)]/20 bg-[color:var(--color-purple)]/10",
         verified:
-          "border-verified/20 bg-verified/10 text-verified",
+          "text-[color:var(--color-verified)] border-[color:var(--color-verified)]/20 bg-[color:var(--color-verified)]/10",
         warning:
-          "border-warn/20 bg-warn/10 text-warn",
+          "text-[color:var(--color-warn)] border-[color:var(--color-warn)]/20 bg-[color:var(--color-warn)]/10",
         ai:
-          "border-ai/20 bg-ai/10 text-ai",
+          "text-[color:var(--color-ai)] border-[color:var(--color-ai)]/20 bg-[color:var(--color-ai)]/10",
         muted:
           "border-border bg-muted text-muted-foreground",
       },

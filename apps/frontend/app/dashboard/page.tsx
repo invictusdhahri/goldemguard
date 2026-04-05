@@ -7,7 +7,7 @@ const ACTIONS = [
     icon:    MessageSquare,
     label:   'Chat Analysis',
     desc:    'Verify a claim against an image or video',
-    color:   '#00d4ff',
+    accentVar: '--color-cyan',
     primary: true,
   },
   {
@@ -15,7 +15,7 @@ const ACTIONS = [
     icon:    Upload,
     label:   'File Scanner',
     desc:    'Deep-scan any media file for AI generation',
-    color:   '#8b5cf6',
+    accentVar: '--color-purple',
     primary: false,
   },
   {
@@ -23,7 +23,7 @@ const ACTIONS = [
     icon:    FlaskConical,
     label:   'Extension test',
     desc:    'Sample feed for the browser extension',
-    color:   '#22d3ee',
+    accentVar: '--color-cyan',
     primary: false,
   },
   {
@@ -31,37 +31,48 @@ const ACTIONS = [
     icon:    Clock,
     label:   'History',
     desc:    'Browse your previous analyses',
-    color:   '#64748b',
+    accentVar: '--muted-foreground',
     primary: false,
   },
 ]
 
 export default function DashboardPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-grid px-4">
+    <main
+      className="flex min-h-screen flex-col items-center justify-center gap-8 px-4"
+      style={{ background: 'var(--background)' }}
+    >
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="mt-2 text-slate-400">Overview of your detection activity.</p>
+        <h1
+          className="text-3xl font-bold"
+          style={{ color: 'var(--foreground)', fontFamily: 'var(--font-display)' }}
+        >
+          Dashboard
+        </h1>
+        <p className="mt-2 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          Overview of your detection activity.
+        </p>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-4">
-        {ACTIONS.map(({ href, icon: Icon, label, desc, color, primary }) => (
+        {ACTIONS.map(({ href, icon: Icon, label, desc, accentVar, primary }) => (
           <Link
             key={href}
             href={href}
-            className="group inline-flex flex-col items-center gap-2 rounded-xl px-7 py-5 text-center no-underline transition-all duration-200 hover:-translate-y-0.5"
-            style={{
-              background: primary ? `${color}14` : 'rgba(255,255,255,0.03)',
-              border:     `1px solid ${primary ? `${color}33` : 'rgba(255,255,255,0.08)'}`,
-              minWidth:   '180px',
-            }}
+            className="liquid-glass-card group inline-flex flex-col items-center gap-3 rounded-2xl px-7 py-5 text-center no-underline transition-all duration-200"
+            style={{ minWidth: '180px' }}
           >
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-              style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
-              <Icon size={18} style={{ color }} />
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors"
+              style={{
+                background: `color-mix(in srgb, var(${accentVar}) 14%, transparent)`,
+                border: `1px solid color-mix(in srgb, var(${accentVar}) 22%, transparent)`,
+              }}
+            >
+              <Icon size={18} style={{ color: `var(${accentVar})` }} />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">{label}</p>
-              <p className="text-xs text-slate-500 mt-0.5 max-w-[140px]">{desc}</p>
+              <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{label}</p>
+              <p className="text-xs mt-0.5 max-w-[140px]" style={{ color: 'var(--muted-foreground)' }}>{desc}</p>
             </div>
           </Link>
         ))}

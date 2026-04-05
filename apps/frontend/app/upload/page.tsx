@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, ImageIcon, Video, Music, FileText, Zap, Shield, CheckCircle, Loader2, X, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import InteractiveBackground from '../../components/InteractiveBackground'
 import { useAuth } from '@/hooks/useAuth'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
@@ -243,14 +242,6 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <InteractiveBackground />
-
-      {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(0,212,255,0.06)" }} />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(139,92,246,0.06)", animationDelay: '1s' }} />
-      </div>
-
       <div className="max-w-3xl mx-auto px-4 py-12 relative z-10">
 
         {/* Back link */}
@@ -294,7 +285,7 @@ export default function UploadPage() {
         )}
 
         {/* Main Upload Card */}
-        <Card className="mb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.9) 0%, rgba(13,13,26,0.95) 100%)" }}>
+        <Card className="mb-6 overflow-hidden liquid-glass-card">
           <CardContent className="p-6">
             {/* Drop Zone */}
             <div
@@ -304,12 +295,12 @@ export default function UploadPage() {
               onClick={() => document.getElementById('file-input')?.click()}
               className={`
                 relative overflow-hidden rounded-xl p-12 text-center cursor-pointer
-                transition-all duration-300 ease-out group
+                transition-colors duration-200
                 ${isDragging
-                  ? 'border-2 border-cyan scale-[1.01]'
+                  ? 'border-2 border-cyan'
                   : file
                     ? 'border-2 border-purple/30'
-                    : 'border-2 border-dashed border-border hover:border-cyan/40'
+                    : 'border-2 border-dashed border-border'
                 }
               `}
               style={{
@@ -320,15 +311,12 @@ export default function UploadPage() {
                     : 'transparent',
               }}
             >
-              {/* Hover gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan/5 via-transparent to-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
               {/* Scan line when file selected */}
               {file && !uploading && <div className="scan-line" />}
 
               {file ? (
                 <div className="relative z-10 space-y-4">
-                  <div className="flex justify-center" style={{ animation: uploading ? undefined : "float 4s ease-in-out infinite" }}>
+                  <div className="flex justify-center">
                     <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}>
                       <FileIcon className="w-10 h-10 text-cyan" strokeWidth={1.5} />
                     </div>
@@ -354,7 +342,7 @@ export default function UploadPage() {
                 </div>
               ) : (
                 <div className="relative z-10 space-y-5">
-                  <div className="flex justify-center" style={{ animation: "float 6s ease-in-out infinite" }}>
+                  <div className="flex justify-center">
                     <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)" }}>
                       <Upload className="w-10 h-10 text-cyan" strokeWidth={1.5} />
                     </div>
@@ -433,7 +421,7 @@ export default function UploadPage() {
               {FEATURES.map((feature) => {
                 const Icon = feature.icon
                 return (
-                  <Card key={feature.title} className="p-5 text-center backdrop-blur-sm" style={{ background: "linear-gradient(135deg, rgba(18,18,32,0.8) 0%, rgba(13,13,26,0.9) 100%)" }}>
+                  <Card key={feature.title} className="p-5 text-center liquid-glass-card">
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan/10 border border-cyan/20">
                         <Icon className="w-6 h-6 text-cyan" strokeWidth={1.5} />
