@@ -41,6 +41,23 @@ The initial migration creates tables (`users`, `analysis_jobs`, `results`), RLS 
 
 Under **Authentication → Providers**, keep **Email** enabled (and optionally **Google**).
 
+### 1.4 Auth URLs (avoid localhost on production)
+
+Supabase uses **Site URL** as the default redirect for email confirmation, magic links, and OAuth when no other URL is allowed. If it stays `http://localhost:3000`, users will land on localhost after confirming email—even from production.
+
+1. Open **Authentication → [URL Configuration](https://supabase.com/dashboard/project/_/auth/url-configuration)**.
+2. Set **Site URL** to your production app, e.g. `https://goldemguard.vercel.app` (no trailing slash required in the UI; the app sends redirects with a trailing `/` where needed).
+3. Under **Redirect URLs**, add every origin you use, for example:
+   - `https://goldemguard.vercel.app/**`
+   - `http://localhost:3001/**` (this repo’s dev port; add `http://localhost:3000/**` if you run Next on 3000)
+   - Preview URLs if needed, e.g. `https://*-yourteam.vercel.app/**` ([wildcards](https://supabase.com/docs/guides/auth/redirect-urls))
+
+On **Vercel**, set **`NEXT_PUBLIC_SITE_URL`** in the Production environment to `https://goldemguard.vercel.app/` so server-side code and builds resolve the same canonical URL. The register flow passes **`emailRedirectTo`** using the current browser origin; confirmation links only work if that URL is in the redirect allow list above.
+
+If you use **local Supabase** (`supabase start`), set the same values in `supabase/config.toml` under `[auth]` (`site_url`, `additional_redirect_urls`) so it matches the [CLI config](https://supabase.com/docs/guides/cli/config#auth).
+
+**Email templates:** If links still ignore `emailRedirectTo`, update templates to use `{{ .RedirectTo }}` where appropriate instead of only `{{ .SiteURL }}` ([docs](https://supabase.com/docs/guides/auth/redirect-urls#email-templates-when-using-redirectto)).
+
 ---
 
 ## 2. Frontend (Vercel)
@@ -60,6 +77,7 @@ In **Settings → Environment Variables** (Production, Preview, Development as n
 |------|------------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase **anon** key |
+| `NEXT_PUBLIC_SITE_URL` | Production origin, e.g. `https://goldemguard.vercel.app/` (matches Supabase **Site URL** / redirects) |
 | `NEXT_PUBLIC_API_URL` | Backend public URL ending in **`/api`** (e.g. `https://clawy-api.onrender.com/api`) |
 
 Redeploy after changing env vars.

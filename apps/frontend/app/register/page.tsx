@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { getPublicSiteUrl } from '@/lib/siteUrl'
 import { UserPlus, AlertCircle, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -35,6 +36,10 @@ export default function RegisterPage() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // Must match Authentication → URL Configuration → Redirect URLs in Supabase (and production Site URL).
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : getPublicSiteUrl(),
+        },
       })
 
       if (signUpError) throw signUpError
