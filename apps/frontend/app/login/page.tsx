@@ -68,7 +68,19 @@ export default function LoginPage() {
         setIsLogin(true)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      const msg = err instanceof Error ? err.message : String(err)
+      const isNetwork =
+        msg === 'Failed to fetch' ||
+        msg.includes('NetworkError') ||
+        msg.includes('Load failed') ||
+        (err instanceof TypeError && msg.toLowerCase().includes('fetch'))
+      if (isNetwork) {
+        setError(
+          `Cannot reach the API at ${apiBase}. Start the backend (port 4000: run "pnpm dev" from the repo root or start @veritas/backend), then retry. If the API runs elsewhere, set NEXT_PUBLIC_API_URL in apps/frontend/.env.local and restart the dev server.`,
+        )
+      } else {
+        setError(msg || 'Something went wrong')
+      }
     } finally {
       setLoading(false)
     }
