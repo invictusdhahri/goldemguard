@@ -1,10 +1,9 @@
 "use client";
 
-import { Play } from "lucide-react";
 import FadeInUp from "./FadeInUp";
 
-/** Set to e.g. `/demo.mp4` after adding the file under `apps/frontend/public/`. */
-const DEMO_VIDEO_SRC: string | undefined = undefined;
+/** Served from `apps/frontend/public/goblenguard.mp4`. */
+const DEMO_VIDEO_SRC = "/goblenguard.mp4";
 
 export default function WatchDemo() {
   return (
@@ -40,28 +39,9 @@ export default function WatchDemo() {
               playsInline
               preload="metadata"
             >
-              {DEMO_VIDEO_SRC ? <source src={DEMO_VIDEO_SRC} type="video/mp4" /> : null}
+              <source src={DEMO_VIDEO_SRC} type="video/mp4" />
+              Your browser does not support the video tag.
             </video>
-
-            {!DEMO_VIDEO_SRC && (
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none"
-                aria-hidden
-              >
-                <span
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
-                  style={{
-                    background: "var(--glass-bg)",
-                    border: "1px solid var(--glass-border-subtle)",
-                  }}
-                >
-                  <Play size={22} style={{ color: "var(--foreground)", marginLeft: "3px" }} />
-                </span>
-                <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                  Your video will play here
-                </span>
-              </div>
-            )}
           </div>
         </FadeInUp>
       </div>
