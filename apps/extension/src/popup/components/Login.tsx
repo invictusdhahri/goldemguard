@@ -35,8 +35,8 @@ export function Login({ onLogin, loading, error }: Props) {
         <p className="text-lg font-bold gradient-text-cyan" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
           VeritasAI
         </p>
-        <p className="text-xs text-center" style={{ color: '#64748b' }}>
-          Sign in to detect AI-generated media
+        <p className="text-xs text-center max-w-[280px] leading-relaxed" style={{ color: '#64748b' }}>
+          Sign in to analyze the current tab — works on Twitter/X, Facebook, and any site.
         </p>
       </div>
 

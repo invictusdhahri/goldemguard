@@ -1,15 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { AppWindow, ShieldCheck, X, Scan, Eye, Zap, ArrowRight } from "lucide-react";
 import FadeInUp from "./FadeInUp";
 
+/** Fixed Unsplash URLs — varied subjects, deterministic (no SSR/client random mismatch). */
 const MOCK_TWEETS = [
   {
     handle: "@news_daily",
     name: "Daily News",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=96&h=96&fit=crop&q=80",
     text: "Breaking: Shocking footage emerges from downtown protest rally...",
-    hasImage: true,
+    media: {
+      kind: "image" as const,
+      src: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800&auto=format&fit=crop&q=80",
+      alt: "Crowd at an outdoor rally",
+    },
     verdict: "AI_GENERATED",
     confidence: 96.2,
     type: "image",
@@ -17,8 +25,14 @@ const MOCK_TWEETS = [
   {
     handle: "@tech_insider",
     name: "Tech Insider",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&q=80",
     text: "CEO confirms massive layoffs in leaked audio recording",
-    hasImage: false,
+    media: {
+      kind: "audio" as const,
+      src: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&auto=format&fit=crop&q=80",
+      alt: "Audio mixer and studio equipment",
+    },
     verdict: "AI_GENERATED",
     confidence: 91.8,
     type: "audio",
@@ -26,8 +40,14 @@ const MOCK_TWEETS = [
   {
     handle: "@worldphoto",
     name: "World Photography",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop&q=80",
     text: "Stunning sunset captured over the Grand Canyon yesterday",
-    hasImage: true,
+    media: {
+      kind: "image" as const,
+      src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80",
+      alt: "Grand Canyon at sunset",
+    },
     verdict: "HUMAN",
     confidence: 98.1,
     type: "image",
@@ -37,13 +57,15 @@ const MOCK_TWEETS = [
 const PERKS = [
   {
     icon: Scan,
-    title: "Auto-Scan Feed",
-    description: "Automatically detects and analyzes every post, image, and video in your timeline.",
+    title: "Auto-Scan Feeds & Pages",
+    description:
+      "Runs on any site — Facebook, blogs, news, and more — with tailored scrapers on major feeds where layouts demand it.",
   },
   {
     icon: Eye,
     title: "Instant Verdicts",
-    description: "Get real-time AI/human verdicts overlaid directly on tweets — no extra clicks.",
+    description:
+      "Real-time AI/human verdicts overlaid on posts and media — no extra clicks.",
   },
   {
     icon: Zap,
@@ -113,15 +135,16 @@ export default function ExtensionShowcase() {
             className="text-4xl lg:text-5xl font-bold tracking-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            <span style={{ color: "var(--foreground)" }}>Find the Truth on</span>{" "}
-            <span className="gradient-text">Twitter/X</span>
+            <span style={{ color: "var(--foreground)" }}>Find the truth </span>
+            <span className="gradient-text">everywhere</span>
           </h2>
           <p
             className="text-base max-w-2xl leading-relaxed"
             style={{ color: "var(--muted-foreground)" }}
           >
-            Our Chrome extension lives inside your feed. It auto-scans every tweet — images, videos,
-            audio, text — and flags AI-generated content before you even scroll past it.
+            Our Chrome extension works on Facebook, generic pages, and anywhere you browse. It
+            auto-scans posts, images, videos, audio, and text, and flags AI-generated content before
+            you scroll past.
             No tab switching. No uploads. Just the truth, inline.
           </p>
         </FadeInUp>
@@ -196,12 +219,19 @@ export default function ExtensionShowcase() {
                   >
                     {/* Avatar */}
                     <div
-                      className="w-10 h-10 rounded-full flex-shrink-0"
+                      className="relative w-10 h-10 rounded-full flex-shrink-0 overflow-hidden"
                       style={{
-                        background: "var(--glass-bg-hover)",
                         border: "1px solid var(--glass-border-subtle)",
                       }}
-                    />
+                    >
+                      <Image
+                        src={tweet.avatarUrl}
+                        alt=""
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    </div>
 
                     {/* Tweet body */}
                     <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -227,15 +257,51 @@ export default function ExtensionShowcase() {
                         {tweet.text}
                       </p>
 
-                      {/* Image placeholder */}
-                      {tweet.hasImage && (
+                      {/* Media preview (image or audio strip) */}
+                      {tweet.media.kind === "image" && (
                         <div
-                          className="w-full h-28 rounded-xl"
-                          style={{
-                            background: "var(--glass-bg-hover)",
-                            border: "1px solid var(--glass-border-subtle)",
-                          }}
-                        />
+                          className="relative w-full h-28 rounded-xl overflow-hidden"
+                          style={{ border: "1px solid var(--glass-border-subtle)" }}
+                        >
+                          <Image
+                            src={tweet.media.src}
+                            alt={tweet.media.alt}
+                            fill
+                            sizes="(max-width: 1024px) 100vw, 480px"
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      {tweet.media.kind === "audio" && (
+                        <div
+                          className="relative w-full h-20 rounded-xl overflow-hidden"
+                          style={{ border: "1px solid var(--glass-border-subtle)" }}
+                        >
+                          <Image
+                            src={tweet.media.src}
+                            alt={tweet.media.alt}
+                            fill
+                            sizes="(max-width: 1024px) 100vw, 480px"
+                            className="object-cover"
+                          />
+                          <div
+                            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                            style={{
+                              background:
+                                "linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--background) 35%, transparent) 50%, transparent 100%)",
+                            }}
+                          >
+                            <span
+                              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded"
+                              style={{
+                                background: "color-mix(in srgb, var(--background) 75%, transparent)",
+                                color: "var(--muted-foreground)",
+                              }}
+                            >
+                              Audio clip
+                            </span>
+                          </div>
+                        </div>
                       )}
 
                       {/* Extension verdict overlay */}
@@ -309,8 +375,8 @@ export default function ExtensionShowcase() {
               >
                 <div className="flex items-center gap-6 flex-wrap">
                   {[
-                    { value: "100K+", label: "Tweets scanned" },
-                    { value: "<1s", label: "Per-tweet analysis" },
+                    { value: "100K+", label: "Posts scanned" },
+                    { value: "<1s", label: "Per-item analysis" },
                     { value: "Free", label: "During beta" },
                   ].map((stat) => (
                     <div key={stat.label} className="flex flex-col gap-0.5">
