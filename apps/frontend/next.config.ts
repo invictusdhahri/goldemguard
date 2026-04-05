@@ -2,9 +2,10 @@ import type { NextConfig } from "next";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** This file lives in `apps/frontend`; monorepo root is two levels up (where pnpm hoists tooling). */
+/** `apps/frontend` — directory containing this config. */
 const frontendDir = path.dirname(fileURLToPath(import.meta.url));
-const monorepoRoot = path.join(frontendDir, "..", "..");
+/** Monorepo root (`clawy/`) — where pnpm hoists `node_modules/next`. */
+const monorepoRoot = path.resolve(frontendDir, "..", "..");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -18,7 +19,8 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {
-    // pnpm workspace: Turbopack must resolve `next` from the repo root, not `app/` (see Next 16 monorepo note).
+    // Must match where `next/package.json` resolves with pnpm (usually repo root, not `apps/frontend/`).
+    // If `root` is only `apps/frontend`, Turbopack often cannot see hoisted `next` and errors on `./app`.
     root: monorepoRoot,
   },
   // Suppress hydration warnings caused by browser extensions

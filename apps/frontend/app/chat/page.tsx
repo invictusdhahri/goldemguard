@@ -30,6 +30,7 @@ import { Progress } from '@/components/ui/progress'
 import { useFakeAnalysisProgress, useRotatingLoadingMessage } from '@/lib/loadingFun'
 import { useTrialCredits } from '@/components/credits/CreditsProvider'
 import { MinecraftVerdictBurst } from '@/components/effects/MinecraftVerdictBurst'
+import { verdictReasonBullets, verdictResourceLinks } from '@veritas/shared'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,9 @@ interface AuthenticityResult {
   frame_scores?: number[]
   max_score?: number
   mean_score?: number
+  /** From SightEngine axis (optional on older responses). */
+  top_signals?: string[]
+  caveat?: string | null
   error?: string
 }
 
@@ -276,6 +280,16 @@ export default function ChatPage() {
 
   const misleadingExplain = useMemo(
     () => (result ? getMisleadingExplanation(result) : null),
+    [result],
+  )
+
+  const verdictReasons = useMemo(
+    () => (result ? verdictReasonBullets(result) : []),
+    [result],
+  )
+
+  const verdictResources = useMemo(
+    () => (result ? verdictResourceLinks(result) : []),
     [result],
   )
 
@@ -646,6 +660,41 @@ export default function ChatPage() {
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
                   {overall.summary}
                 </p>
+                {verdictReasons.length > 0 && (
+                  <div className="text-left max-w-lg mx-auto space-y-2 pt-4 border-t border-border/50">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Why this verdict
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4 marker:text-cyan/80">
+                      {verdictReasons.map((line, i) => (
+                        <li key={i} className="leading-relaxed">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {verdictResources.length > 0 && (
+                  <div className="text-left max-w-lg mx-auto space-y-2 pt-3 border-t border-border/50">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Resources
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {verdictResources.map((link) => (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-cyan hover:underline"
+                        >
+                          <ExternalLink size={11} />
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -699,29 +748,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            {result.contextual && !result.contextual.error && result.contextual.sources.length > 0 && (
-              <div className="rounded-xl p-5 space-y-3 bg-muted border border-border">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sources</p>
-                <div className="flex flex-col gap-1.5">
-                  {result.contextual.sources.map((src, i) => {
-                    let hostname = src
-                    try { hostname = new URL(src).hostname.replace('www.', '') } catch { /* keep raw */ }
-                    return (
-                      <a
-                        key={i}
-                        href={src}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-cyan hover:underline"
-                      >
-                        <ExternalLink size={11} />
-                        {hostname}
-                      </a>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Web sources from Grok are listed in the verdict card under Resources */}
 
             {/* Axis detail cards (no prominent scores — those go below) */}
             {(result.authenticity || result.contextual) && (

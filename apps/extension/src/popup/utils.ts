@@ -3,7 +3,7 @@
  * Mirrors the logic in apps/frontend/app/chat/page.tsx (deriveOverallSummary).
  */
 
-import type { AnalysisResponse, OverallSummary } from '../../types';
+import type { AnalysisResponse, OverallSummary } from '../types';
 
 export function deriveOverallSummary(r: AnalysisResponse): OverallSummary {
   const auth = r.authenticity;

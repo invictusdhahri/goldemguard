@@ -28,6 +28,8 @@ export interface AuthenticityResult {
   explanation: string;
   frame_scores?: number[];
   max_score?: number;
+  top_signals?: string[];
+  caveat?: string | null;
   error?: string;
 }
 

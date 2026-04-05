@@ -2,6 +2,7 @@ import React from 'react';
 import { ImageIcon, Video, FileText, Globe, AlertTriangle, Loader2, Eye } from 'lucide-react';
 import type { ScrapedItem, RevealResult } from '../../types';
 import { VerdictBadge } from './VerdictBadge';
+import { verdictReasonBullets, verdictResourceLinks } from '@veritas/shared';
 import { deriveOverallSummary } from '../utils';
 
 interface Props {
@@ -35,6 +36,8 @@ export function ItemCard({ item, reveal, onReveal }: Props) {
   const isError   = reveal?.status === 'error';
 
   const overall = isDone && reveal.data ? deriveOverallSummary(reveal.data) : null;
+  const reasons = isDone && reveal.data ? verdictReasonBullets(reveal.data) : [];
+  const resources = isDone && reveal.data ? verdictResourceLinks(reveal.data) : [];
 
   return (
     <div
@@ -94,7 +97,12 @@ export function ItemCard({ item, reveal, onReveal }: Props) {
 
         {/* Verdict (after reveal) */}
         {isDone && overall && (
-          <VerdictBadge headline={overall.headline} summary={overall.summary} />
+          <VerdictBadge
+            headline={overall.headline}
+            summary={overall.summary}
+            reasons={reasons}
+            resources={resources}
+          />
         )}
 
         {/* Error state */}
