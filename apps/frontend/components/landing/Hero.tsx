@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Moon, ShieldCheck, Zap, Globe } from "lucide-react";
+import { ArrowRight, Moon, Sun, ShieldCheck, Zap, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import GuardVillager from "./GuardVillager";
@@ -37,6 +37,41 @@ function VillagerNightDecor() {
       />
       <span
         className="absolute left-4 top-24 h-1 w-1 rounded-full bg-amber-100/50 shadow-[0_0_6px_rgba(253,230,138,0.35)]"
+      />
+    </div>
+  );
+}
+
+function VillagerLightDecor() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || resolvedTheme !== "light") return null;
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-visible z-0"
+      aria-hidden
+    >
+      <Sun
+        className="absolute -right-1 top-6 h-9 w-9 text-amber-500/90"
+        strokeWidth={1.35}
+      />
+      <span
+        className="absolute -right-3 top-[5.25rem] h-2 w-2 rounded-full bg-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.45)]"
+      />
+      <span
+        className="absolute right-8 top-2 h-1.5 w-1.5 rounded-full bg-amber-300/55 shadow-[0_0_10px_rgba(251,191,36,0.4)]"
+      />
+      <span
+        className="absolute -left-2 top-14 h-1.5 w-1.5 rounded-full bg-amber-300/45 shadow-[0_0_8px_rgba(251,191,36,0.35)]"
+      />
+      <span
+        className="absolute left-4 top-24 h-1 w-1 rounded-full bg-amber-200/50 shadow-[0_0_6px_rgba(251,191,36,0.3)]"
       />
     </div>
   );
@@ -226,7 +261,7 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* Right — Guard Villager character (+ moon & stars in dark mode) */}
+          {/* Right — Guard Villager character (+ sun in light mode, moon & stars in dark) */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -234,6 +269,7 @@ export default function Hero() {
             className="hidden lg:flex items-center justify-center flex-shrink-0 relative w-[200px] min-h-[280px]"
             style={{ animation: "float 6s ease-in-out infinite" }}
           >
+            <VillagerLightDecor />
             <VillagerNightDecor />
             <div className="relative z-10">
               <GuardVillager />

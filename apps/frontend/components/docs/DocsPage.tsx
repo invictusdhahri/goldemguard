@@ -81,14 +81,14 @@ export function DocsPage() {
           </Link>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan">Documentation</p>
           <h1 className="font-[family-name:var(--font-display)] mt-3 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            VeritasAI — Multimodal Deepfake Detection
+            GaulemGuard — Multimodal Deepfake Detection
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-            <strong className="font-semibold text-foreground">Tagline:</strong> Detect. Explain. Trust.
+            <strong className="font-semibold text-foreground">Detect. Explain. Trust.</strong>
           </p>
           <p className="mt-4 max-w-3xl text-pretty leading-relaxed text-foreground/80">
-            Multimodal AI-generated content detection platform built for Menacraft 2025 hackathon. Upload images,
-            videos, audio, or documents to get instant deepfake analysis with plain-English explanations.
+            Multimodal AI-generated content detection: upload images, videos, audio, or documents for instant analysis
+            with plain-English explanations — powered by specialized models and a self-healing fallback architecture.
           </p>
         </div>
       </header>
@@ -230,7 +230,9 @@ export function DocsPage() {
             </DocsSection>
 
             <DocsSection id="hackathon" title="🏆 Hackathon">
-              <p className="text-foreground/80">Built for Menacraft 2025 - Content Authenticity Track</p>
+              <p className="text-foreground/80">
+                GaulemGuard was originally built for Menacraft 2025 — Content Authenticity Track.
+              </p>
             </DocsSection>
 
             <DocsSection id="acknowledgments" title="🙏 Acknowledgments">

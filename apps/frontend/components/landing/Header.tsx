@@ -2,19 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Shield, ChevronRight, Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
-const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
+type NavItem =
+  | { label: string; sectionId: string }
+  | { label: string; href: string };
+
+const NAV_LINKS: NavItem[] = [
+  { label: "Features", sectionId: "features" },
+  { label: "How It Works", sectionId: "how-it-works" },
   { label: "Docs", href: "/docs" },
 ];
 
 export default function Header() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleSectionNav =
+    (sectionId: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (pathname === "/") {
+        e.preventDefault();
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+      }
+    };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -88,19 +102,34 @@ export default function Header() {
 
           {/* Desktop nav links — centered */}
           <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-            {NAV_LINKS.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "rounded-full font-medium transition-all duration-300 hover:bg-[var(--glass-bg)] hover:text-[var(--foreground)]",
-                  scrolled ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
-                )}
-                style={{ color: "var(--muted-foreground)" }}
-              >
-                {item.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((item) =>
+              "href" in item ? (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={cn(
+                    "rounded-full font-medium transition-all duration-300 hover:bg-[var(--glass-bg)] hover:text-[var(--foreground)]",
+                    scrolled ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
+                  )}
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href="/"
+                  onClick={handleSectionNav(item.sectionId)}
+                  className={cn(
+                    "rounded-full font-medium transition-all duration-300 hover:bg-[var(--glass-bg)] hover:text-[var(--foreground)]",
+                    scrolled ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
+                  )}
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  {item.label}
+                </a>
+              )
+            )}
           </div>
 
           {/* Right side: theme toggle + CTA */}
@@ -168,21 +197,40 @@ export default function Header() {
         }}
       >
         <div className="px-4 py-5 flex flex-col gap-1">
-          {NAV_LINKS.map((item, i) => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-[var(--glass-bg-hover)]"
-              style={{
-                color: "var(--foreground)",
-                transitionDelay: `${i * 40}ms`,
-              }}
-            >
-              {item.label}
-              <ArrowRight size={14} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
-            </a>
-          ))}
+          {NAV_LINKS.map((item, i) =>
+            "href" in item ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-[var(--glass-bg-hover)]"
+                style={{
+                  color: "var(--foreground)",
+                  transitionDelay: `${i * 40}ms`,
+                }}
+              >
+                {item.label}
+                <ArrowRight size={14} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href="/"
+                onClick={(e) => {
+                  handleSectionNav(item.sectionId)(e);
+                  setMenuOpen(false);
+                }}
+                className="flex items-center justify-between py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-[var(--glass-bg-hover)]"
+                style={{
+                  color: "var(--foreground)",
+                  transitionDelay: `${i * 40}ms`,
+                }}
+              >
+                {item.label}
+                <ArrowRight size={14} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
+              </a>
+            )
+          )}
 
           <div
             className="flex flex-col gap-2 pt-4 mt-3"

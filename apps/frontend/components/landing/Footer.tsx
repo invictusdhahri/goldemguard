@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Shield, ExternalLink, MessageCircle } from "lucide-react";
 import FadeInUp from "./FadeInUp";
 
-const LINKS = {
+type FooterLink =
+  | { label: string; sectionId: string }
+  | { label: string; href: string };
+
+const LINKS: Record<string, FooterLink[]> = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how-it-works" },
+    { label: "Features", sectionId: "features" },
+    { label: "How It Works", sectionId: "how-it-works" },
     { label: "Pricing", href: "#" },
     { label: "Changelog", href: "#" },
   ],
@@ -25,6 +30,16 @@ const LINKS = {
 };
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  const handleSectionNav =
+    (sectionId: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (pathname === "/") {
+        e.preventDefault();
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+
   return (
     <footer
       className="relative pt-16 pb-8 overflow-hidden"
@@ -88,15 +103,28 @@ export default function Footer() {
                 <ul className="flex flex-col gap-2">
                   {items.map((link) => (
                     <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="text-sm transition-colors duration-200"
-                        style={{ color: "var(--muted-foreground)" }}
-                        onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--foreground)")}
-                        onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--muted-foreground)")}
-                      >
-                        {link.label}
-                      </a>
+                      {"href" in link ? (
+                        <a
+                          href={link.href}
+                          className="text-sm transition-colors duration-200"
+                          style={{ color: "var(--muted-foreground)" }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--foreground)")}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--muted-foreground)")}
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <a
+                          href="/"
+                          onClick={handleSectionNav(link.sectionId)}
+                          className="text-sm transition-colors duration-200"
+                          style={{ color: "var(--muted-foreground)" }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--foreground)")}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--muted-foreground)")}
+                        >
+                          {link.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>
