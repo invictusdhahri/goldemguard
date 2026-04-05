@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { normalizeApiBase, readJsonBody } from '@/lib/readApiResponse'
 
 const SUPPORTED_TYPES = [
   { label: 'Images', ext: 'JPG, PNG, WebP', icon: ImageIcon, color: '#00d4ff' },
@@ -145,7 +146,7 @@ export default function UploadPage() {
     setError('')
     setUploadProgress(10)
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'
+    const apiBase = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL)
 
     try {
       const formData = new FormData()
@@ -162,12 +163,19 @@ export default function UploadPage() {
 
       setUploadProgress(60)
 
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json()
-        throw new Error(errorData.error || 'Upload failed')
-      }
+      const uploadData = await readJsonBody<{
+        file_url?: string
+        error?: string
+      }>(uploadRes, 'Upload')
 
-      const uploadData = await uploadRes.json()
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error ?? `Upload failed (${uploadRes.status})`)
+      }
+      if (!uploadData.file_url) {
+        throw new Error(
+          'Upload response missing file_url. Confirm NEXT_PUBLIC_API_URL is the backend base ending in /api.',
+        )
+      }
 
       const mediaType = inferMediaCategory(file)
 
@@ -182,12 +190,19 @@ export default function UploadPage() {
 
       setUploadProgress(90)
 
-      if (!analyzeRes.ok) {
-        const errorData = await analyzeRes.json()
-        throw new Error(errorData.error || 'Analysis creation failed')
-      }
+      const analyzeData = await readJsonBody<{
+        job_id?: string
+        error?: string
+      }>(analyzeRes, 'Analyze')
 
-      const analyzeData = await analyzeRes.json()
+      if (!analyzeRes.ok) {
+        throw new Error(analyzeData.error ?? `Analysis failed (${analyzeRes.status})`)
+      }
+      if (!analyzeData.job_id) {
+        throw new Error(
+          'No job_id returned. Check backend logs and API URL configuration.',
+        )
+      }
       setUploadProgress(100)
 
       setTimeout(() => router.push(`/result/${analyzeData.job_id}`), 300)
