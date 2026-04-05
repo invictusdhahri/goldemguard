@@ -199,6 +199,8 @@ Three tables in Supabase PostgreSQL with Row Level Security:
 Hosting can often start on **free tiers** (e.g. Supabase, Vercel, Render) depending on usage. **Detection** uses third-party APIs (SightEngine, xAI, Anthropic, Resemble, Sapling)—cost follows each provider’s pricing and your call volume, not “$0 models” in aggregate.
 
 ---
+Canva Link: https://canva.link/i5g7pu2w0xwbatc
+
 
 ## License
 
